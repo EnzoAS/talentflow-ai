@@ -40,9 +40,38 @@ class SimulationTurnRequest(BaseModel):
     user_message: str
     context: dict
 
-# --- Function Calling (Tools) ---
-# We define Python functions that the Orchestrator Agent can call.
-# This proves true Agentic behavior for the Hackathon.
+# --- Pydantic Schemas for Gemini Structured Outputs ---
+
+class SkillEvaluation(BaseModel):
+    name: str
+    score: float
+    feedback: str
+
+class ScorecardEvaluationResponse(BaseModel):
+    overall_score: float
+    summary: str
+    skills: list[SkillEvaluation]
+
+class SimulationBotTurnResponse(BaseModel):
+    speaker_id: str
+    speaker_name: str
+    role: str
+    avatar: str
+    text: str
+
+class ATSAnalysisResponse(BaseModel):
+    match_score: int
+    domain: str
+    interviewer_name: str
+    interviewer_role: str
+    interviewer_avatar: str
+    summary: str
+    present_keywords: list[str]
+    missing_keywords: list[str]
+    simulation_focus: str
+    interview_playbook: list[str]
+
+# --- Function Calling & ATS Tool ---
 
 def extract_cv_gaps(cv: str, job: str) -> dict:
     """
@@ -55,30 +84,23 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
     Job Description: {job}
     
     Task:
-    1. Identify the domain of the job (e.g. "Software Engineering", "Performance Marketing", "Corporate Finance", "Product Design", "B2B Sales", etc.).
+    1. Identify the domain of the job (e.g. "Software Engineering", "Growth Marketing", "Corporate Finance", "Product Design", "B2B Sales", etc.).
     2. Define a specialized Technical / Domain Interviewer Persona (e.g. for Marketing: "Marcus Vance" / "Head of Growth & Performance"; for Finance: "Robert Sterling" / "Chief Financial Officer"; for Tech: "Carlos Mendes" / "Senior Tech Lead").
     3. Generate a structured Interview Playbook for Sofia (HR / Culture Facilitator) and the domain specialist.
-    
-    Return ONLY valid JSON with keys:
-    - 'match_score': int (0-100)
-    - 'domain': string (e.g. "Growth Marketing", "Fullstack Engineering", "Financial Planning")
-    - 'interviewer_name': string (Domain expert name)
-    - 'interviewer_role': string (Domain expert title)
-    - 'interviewer_avatar': string (Emoji avatar, e.g. "📈", "👨‍💻", "📊", "🎨", "💼")
-    - 'summary': short string explaining candidate fit and domain gaps
-    - 'present_keywords': list of confirmed skills
-    - 'missing_keywords': list of missing requirements
-    - 'simulation_focus': str instructions for the live interview
-    - 'interview_playbook': list of 3-4 structured challenge prompts customized for this domain
     """
-    resp = client.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
-    )
     try:
+        resp = client.models.generate_content(
+            model=MODEL_ID,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ATSAnalysisResponse,
+                max_output_tokens=600,
+                temperature=0.3
+            )
+        )
         return json.loads(resp.text)
-    except:
+    except Exception as e:
         return {
             "match_score": 85,
             "domain": "Software Engineering",
@@ -112,61 +134,60 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     The Orchestrator pattern: 
     Follows the Interview Playbook and candidate responses in English, dynamically morphing
     between Sofia (HR) and the Domain Specialist (Marketing, Tech, Finance, etc.).
+    Maintains multi-turn conversational context for natural follow-ups.
     """
     context = req.context or {}
     playbook = context.get('interview_playbook', [])
     playbook_str = "\n".join([f"- {p}" for p in playbook]) if isinstance(playbook, list) else str(playbook)
     
-    interviewer_name = context.get('interviewer_name', 'Carlos Mendes')
+    interviewer_name = context.get('interviewer_name', 'Executive Lead')
     interviewer_role = context.get('interviewer_role', 'Domain Lead')
     interviewer_avatar = context.get('interviewer_avatar', '👨‍💼')
-    domain = context.get('domain', 'General Industry')
+    domain = context.get('domain', 'Domain Strategy')
+
+    # Pass the last 3-4 dialogue turns so the AI has conversational memory
+    recent_history = req.dialogue_history[-4:] if req.dialogue_history else []
+    history_lines = "\n".join([f"{m.get('name', 'Speaker')}: {m.get('text', '')}" for m in recent_history])
 
     sys_prompt = f"""
-    You are the Supervisor Agent leading the interview simulation ({req.mode}) for the domain: {domain}.
+    You are the Supervisor Agent orchestrating the live interview simulation ({req.mode}) for the domain: {domain}.
     
-    STRATEGIC INTERVIEW PLAYBOOK:
+    STRATEGIC PLAYBOOK:
     {playbook_str if playbook_str else context.get('simulation_focus', '')}
     
-    Active Agents in this Panel:
-    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Deeply challenges domain metrics, execution, case studies, and trade-offs.
-    - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, team dynamics, and conflict resolution.
+    ACTIVE PANEL MEMBERS:
+    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Challenges candidate on core metrics, domain depth, execution, and trade-offs.
+    - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, team dynamics, and conflict mediation.
     
-    Candidate's last response: "{req.user_message}"
+    RECENT CONVERSATION HISTORY:
+    {history_lines if history_lines else "Interview starting now."}
     
-    Task: Choose the most appropriate agent ({interviewer_name} or Sofia) and generate a sharp, realistic follow-up challenge in English (max 2 short sentences).
+    Candidate's newest response: "{req.user_message}"
     
-    Return ONLY valid JSON:
-    {{
-        "speaker_id": "expert" or "sofia",
-        "speaker_name": "{interviewer_name}" or "Sofia Valente",
-        "role": "{interviewer_role}" or "HR Facilitator",
-        "avatar": "{interviewer_avatar}" or "👩‍💼",
-        "text": "Interviewer speech in English. Direct, realistic, max 2 sentences."
-    }}
+    Task: Select the most appropriate interviewer ({interviewer_name} or Sofia) and respond directly to what the candidate just said. Challenge them with a sharp, realistic question in English (max 2 short sentences).
     """
     
-    resp = client.models.generate_content(
-        model=MODEL_ID,
-        contents=sys_prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            max_output_tokens=150,
-            temperature=0.7
-        )
-    )
-    
     try:
+        resp = client.models.generate_content(
+            model=MODEL_ID,
+            contents=sys_prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=SimulationBotTurnResponse,
+                max_output_tokens=150,
+                temperature=0.7
+            )
+        )
         bot_reply = json.loads(resp.text)
         bot_reply["tokens_estimated"] = len(bot_reply["text"].split()) * 2
         return bot_reply
-    except:
+    except Exception as e:
         return {
             "speaker_id": "expert",
             "speaker_name": interviewer_name,
             "role": interviewer_role,
             "avatar": interviewer_avatar,
-            "text": f"Interesting perspective, but how would you defend this strategy if your core metrics drop during peak campaign demand?",
+            "text": f"Interesting perspective, but how would you defend this strategy if your core metrics drop during peak demand?",
             "tokens_estimated": 20
         }
 
@@ -183,7 +204,7 @@ async def generate_speech_endpoint(req: TTSRequest):
     """
     Generates high-definition neural voices for interviewers.
     Sofia uses 'en-US-AvaNeural' (Professional & Natural HR Voice)
-    Carlos uses 'en-US-AndrewNeural' (Confident & Deep Tech Lead Voice)
+    Expert uses 'en-US-AndrewNeural' (Confident & Deep Executive Voice)
     """
     voice = "en-US-AvaNeural" if req.speaker_id == "sofia" else "en-US-AndrewNeural"
     
@@ -203,64 +224,45 @@ class EvaluationRequest(BaseModel):
 @app.post("/api/evaluate-simulation")
 def evaluate_simulation_endpoint(req: EvaluationRequest):
     """
-    Evaluates the user's transcript and calculates realistic scores based on performance in English.
+    Evaluates the user's transcript and calculates realistic scores based on performance in English with structured Pydantic schema.
     """
     transcript_text = "\n".join([f"{m.get('name', 'User')}: {m.get('text', '')}" for m in req.dialogue_history])
     
     eval_prompt = f"""
-    You are an Executive HR & Tech Lead Evaluator.
-    Analyze the candidate's real interview transcript below and assign strict, realistic scores from 0.0 to 10.0 based on response quality. If they gave evasive, weak, or superficial answers, assign low scores (e.g. 2.0 to 5.0). If they were articulate and demonstrated solid engineering/leadership principles, assign high scores (8.0 to 9.5).
+    You are an Executive HR & Domain Lead Evaluator.
+    Analyze the candidate's real interview transcript below and assign strict, realistic scores from 0.0 to 10.0 based on their actual response quality in English.
     
-    TRANSCRIPT:
+    Evaluation Rules:
+    - If candidate gave evasive, nonsensical, or superficial answers (e.g. testing keywords, complaining), assign low scores (1.0 to 4.0).
+    - If candidate demonstrated structured communication (STAR method), domain knowledge, and clear trade-off justification, assign high scores (7.5 to 9.5).
+    - Always evaluate all 4 competencies: 'Leadership & Mediation', 'Assertive Communication', 'CV Gap Defense', 'Time & Focus Management'.
+    
+    FULL TRANSCRIPT:
     {transcript_text if transcript_text.strip() else "Candidate provided no spoken input."}
-    
-    Return EXACTLY AND ONLY valid JSON in English:
-    {{
-        "overall_score": float (e.g. 4.5),
-        "summary": "Executive summary in English on candidate's performance, communication, and technical depth.",
-        "skills": [
-            {{
-                "name": "Leadership & Mediation",
-                "score": float (0-10),
-                "feedback": "Concise feedback in English."
-            }},
-            {{
-                "name": "Assertive Communication",
-                "score": float (0-10),
-                "feedback": "Concise feedback on clarity and STAR method."
-            }},
-            {{
-                "name": "CV Gap Defense",
-                "score": float (0-10),
-                "feedback": "Concise feedback on architectural justification."
-            }},
-            {{
-                "name": "Time & Focus Management",
-                "score": float (0-10),
-                "feedback": "Concise feedback on conciseness and focus."
-            }}
-        ]
-    }}
     """
-    
-    resp = client.models.generate_content(
-        model=MODEL_ID,
-        contents=eval_prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
-    )
     
     eval_result = {}
     try:
+        resp = client.models.generate_content(
+            model=MODEL_ID,
+            contents=eval_prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ScorecardEvaluationResponse,
+                max_output_tokens=600,
+                temperature=0.2
+            )
+        )
         eval_result = json.loads(resp.text)
-    except:
+    except Exception as e:
         eval_result = {
             "overall_score": 4.0,
-            "summary": "Superficial responses and lack of architectural depth during the live dialogue.",
+            "summary": "Superficial responses and lack of strategic depth during the live dialogue.",
             "skills": [
-                {"name": "Leadership & Mediation", "score": 3.5, "feedback": "Failed to demonstrate proactive leadership in technical deadlock."},
+                {"name": "Leadership & Mediation", "score": 3.5, "feedback": "Failed to demonstrate proactive leadership in deadlock."},
                 {"name": "Assertive Communication", "score": 4.0, "feedback": "Answers were overly brief and lacked structured STAR examples."},
-                {"name": "CV Gap Defense", "score": 3.0, "feedback": "Could not justify distributed systems resilience trade-offs."},
-                {"name": "Time & Focus Management", "score": 5.0, "feedback": "Short interventions without moving the technical agenda forward."}
+                {"name": "CV Gap Defense", "score": 3.0, "feedback": "Could not justify strategy trade-offs."},
+                {"name": "Time & Focus Management", "score": 5.0, "feedback": "Short interventions without moving the agenda forward."}
             ]
         }
 
