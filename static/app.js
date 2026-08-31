@@ -577,18 +577,41 @@ function stopMic() {
 }
 
 async function finishSimulationAndGenerateReport() {
-  if (state.isRunning) toggleSimulation();
+  if (state.isEvaluating) return; // Prevent double invocation
+  state.isEvaluating = true;
+
+  // 1. Immediately stop simulation loop, timers, mic and active audio
+  state.isRunning = false;
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+  if (currentAudioPlayer) {
+    currentAudioPlayer.pause();
+    currentAudioPlayer.currentTime = 0;
+  }
+  stopMic();
+  setSpeakingState(null);
+
+  const startBtn = document.getElementById('btn-start-sim');
+  if (startBtn) {
+    startBtn.innerHTML = '<span>▶</span> <span>Start</span>';
+    startBtn.className = 'px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[14px] font-semibold transition-all shadow-md flex items-center gap-2';
+  }
+
+  // 2. Snapshot current dialogue to evaluate before clearing
+  const sessionDialogue = [...state.dialogueHistory];
   
-  // Show loading feedback if needed
+  // Show Scorecard view with loading indicator
   switchStage('report');
-  document.getElementById('overall-score-display').innerText = '...';
-  
+  document.getElementById('overall-score-display').innerHTML = `<span class="animate-pulse text-2xl font-mono text-slate-400">Evaluating...</span>`;
+
   try {
     const res = await fetch('/api/evaluate-simulation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        dialogue_history: state.dialogueHistory,
+        dialogue_history: sessionDialogue,
         job_context: state.analysisContext,
         user_id: state.userId
       })
@@ -618,11 +641,11 @@ async function finishSimulationAndGenerateReport() {
       const historyItem = {
         id: Date.now(),
         date: new Date().toLocaleString(),
-        mode: state.currentMode === 'one-on-one' ? 'Entrevista 1:1' : 'Dinâmica de Grupo',
+        mode: state.currentMode === 'one-on-one' ? '1:1 Technical Interview' : 'Group Dynamics',
         overallScore: evalData.overall_score,
         summary: evalData.summary,
         skills: evalData.skills,
-        dialogue: [...state.dialogueHistory]
+        dialogue: sessionDialogue
       };
 
       saveSessionToHistory(historyItem);
@@ -636,6 +659,13 @@ async function finishSimulationAndGenerateReport() {
     }
   } catch (err) {
     console.error("Erro na avaliação:", err);
+  } finally {
+    state.isEvaluating = false;
+    // Clear live transcript feed for next session
+    state.dialogueHistory = [];
+    state.secondsLeft = 300;
+    const feed = document.getElementById('dialogue-feed');
+    if (feed) feed.innerHTML = '';
   }
 }
 
