@@ -149,6 +149,14 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     recent_history = req.dialogue_history[-4:] if req.dialogue_history else []
     history_lines = "\n".join([f"{m.get('name', 'Speaker')}: {m.get('text', '')}" for m in recent_history])
 
+    # Distinguish between First Question (Kickoff) vs Follow-up Turn
+    is_initial = not req.user_message or len(req.dialogue_history) == 0
+
+    if is_initial:
+        turn_instruction = f"""This is the very first turn of the interview. Sofia Valente or {interviewer_name} must introduce themselves briefly and ask the opening question tailored specifically to the candidate's CV and the {domain} role."""
+    else:
+        turn_instruction = f"""Respond directly to what the candidate just said in "{req.user_message}". Challenge them with a sharp, realistic follow-up question or probe on their methodology/trade-offs in {domain} (max 2 short sentences)."""
+
     sys_prompt = f"""
     You are the Supervisor Agent orchestrating the live interview simulation ({req.mode}) for the domain: {domain}.
     
@@ -156,15 +164,16 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     {playbook_str if playbook_str else context.get('simulation_focus', '')}
     
     ACTIVE PANEL MEMBERS:
-    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Challenges candidate on core metrics, domain depth, execution, and trade-offs.
+    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Challenges candidate on core domain depth, execution, and trade-offs in {domain}.
     - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, team dynamics, and conflict mediation.
     
     RECENT CONVERSATION HISTORY:
     {history_lines if history_lines else "Interview starting now."}
     
-    Candidate's newest response: "{req.user_message}"
+    Candidate's newest response: "{req.user_message if req.user_message else 'Candidate joined the room.'}"
     
-    Task: Select the most appropriate interviewer ({interviewer_name} or Sofia) and respond directly to what the candidate just said. Challenge them with a sharp, realistic question in English (max 2 short sentences).
+    Task:
+    {turn_instruction}
     """
     
     try:
@@ -187,7 +196,7 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
             "speaker_name": interviewer_name,
             "role": interviewer_role,
             "avatar": interviewer_avatar,
-            "text": f"Interesting perspective, but how would you defend this strategy if your core metrics drop during peak demand?",
+            "text": f"Welcome to the round. Could you briefly introduce your background and the most impactful challenge you solved in your recent experience?",
             "tokens_estimated": 20
         }
 
