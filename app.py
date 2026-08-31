@@ -18,8 +18,11 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 def serve_index():
     return FileResponse(INDEX_PATH)
 
-from dotenv import load_dotenv
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # Initialize Gemini Client (reads GEMINI_API_KEY from environment / .env)
 api_key = os.environ.get("GEMINI_API_KEY", "")
