@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>TalentFlow AI — Avaliação de Carreira & Studio de Simulação</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script>
+ tailwind.config = {
+ darkMode: 'class',
+ }
+ </script>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+ <link rel="stylesheet" href="/static/styles.css">
+ <style>
+ .fade-enter {
+ animation: smoothFade 0.5s ease-out forwards;
+ }
+ @keyframes smoothFade {
+ 0% { opacity: 0; transform: translateY(8px); }
+ 100% { opacity: 1; transform: translateY(0); }
+ }
+ </style>
+</head>
+<body class="bg-[#f8fafc] dark:bg-slate-950 text-[#1e293b] dark:text-slate-50 min-h-screen flex flex-col justify-between selection:bg-slate-900 selection:text-white">
+
+ <!-- TOP HEADER -->
+ <header class="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-0 z-50 px-6 py-3 shadow-sm">
+ <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+ 
+ <!-- Brand Minimal Identity -->
+ <div class="flex items-center gap-3">
+ <div class="w-7 h-7 rounded bg-slate-900 dark:bg-slate-100 text-white flex items-center justify-center text-xs font-semibold">
+ TF
+ </div>
+ <div class="flex items-center gap-2">
+ <span class="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">TalentFlow</span>
+ <span class="text-slate-300">/</span>
+ <span class="text-xs text-slate-500 dark:text-slate-400 ">Career Studio</span>
+ </div>
+ </div>
+
+ <!-- Progressive Stages Switcher -->
+ <div id="header-steps" class="hidden items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium">
+ <button id="tab-cv" onclick="switchStage('cv')" class="px-3.5 py-1.5 rounded transition-colors bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium shadow-sm">
+ 1. Diagnostic
+ </button>
+ <button id="tab-group" onclick="switchStage('group')" class="px-3.5 py-1.5 rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white ">
+ 2. Group Dynamics
+ </button>
+ <button id="tab-one-on-one" onclick="switchStage('one-on-one')" class="px-3.5 py-1.5 rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white ">
+ 3. 1:1 Interview
+ </button>
+ <button id="tab-report" onclick="switchStage('report')" class="px-3.5 py-1.5 rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white ">
+ 4. Scorecard
+ </button>
+ <button id="tab-match" onclick="switchStage('match')" class="px-3.5 py-1.5 rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white ">
+ 5. Matchmaking
+ </button>
+ <button id="tab-history" onclick="switchStage('history')" class="px-3.5 py-1.5 rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white ">
+ 📜 6. History
+ </button>
+ </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Dark Mode Toggle -->
+        <button onclick="document.documentElement.classList.toggle('dark')" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700">
+          🌓
+        </button>
+      </div>
+
+ </div>
+ </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-8 flex flex-col justify-center">
+
+    <!-- ======================================================== -->
+    <!-- LANDING PAGE -->
+    <!-- ======================================================== -->
+    <div id="stage-landing" class="hidden flex-col items-center justify-center text-center gap-6 max-w-2xl mx-auto w-full py-12">
+      <div class="w-20 h-20 rounded-[2rem] bg-gradient-to-br from-slate-800 to-slate-900 text-white flex items-center justify-center text-3xl font-bold shadow-xl mb-4 border-4 border-slate-50">TF</div>
+      <h1 class="text-4xl sm:text-5xl font-semibold text-slate-900 dark:text-white tracking-tight leading-tight">Master real-world interviews with AI Agents.</h1>
+      <p class="text-base text-slate-500 dark:text-slate-400 leading-relaxed max-w-lg mt-2">TalentFlow orchestrates dynamic simulations with AI interviewers using your resume and target job. Practice in real-time, earn a verified Executive Scorecard, and stand out.</p>
+      
+      <div class="flex flex-col sm:flex-row gap-4 mt-6 w-full sm:w-auto">
+        <button onclick="switchStage('cv')" class="px-8 py-4 rounded-xl bg-slate-900 dark:bg-slate-100 text-white font-medium text-[15px] hover:bg-slate-800 dark:hover:bg-slate-700 hover:-translate-y-0.5 focus:ring-4 focus:ring-slate-200 transition-all shadow-lg flex items-center justify-center gap-2">
+          <span>Start Interview Simulation</span>
+          <span class="text-slate-400 dark:text-slate-500">→</span>
+        </button>
+      </div>
+      
+      <div class="flex items-center gap-6 mt-10 text-xs text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider">
+        <span class="flex items-center gap-1.5">✓ ATS Gap Analysis</span>
+        <span class="flex items-center gap-1.5">✓ Multi-Agent Dynamics</span>
+        <span class="flex items-center gap-1.5">✓ Skill Radar Scorecard</span>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- ETAPA 1: DIAGNÓSTICO FOCADO (PROGRESSIVE DISCLOSURE)     -->
+    <!-- ======================================================== -->
+    <div id="stage-cv" class="hidden flex-col gap-6 max-w-3xl mx-auto w-full">
+      
+      <!-- Ingestion Form -->
+      <div id="cv-form-container" class="card-frame flex flex-col md:flex-row overflow-hidden shadow-sm">
+        
+        <!-- Left Banner -->
+        <div class="md:w-5/12 bg-slate-50 dark:bg-slate-800/50 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 p-8 flex flex-col justify-center relative overflow-hidden">
+          <div class="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-blue-200 rounded-full opacity-60 blur-3xl pointer-events-none"></div>
+          <div class="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-emerald-200 rounded-full opacity-60 blur-3xl pointer-events-none"></div>
+          
+          <div class="relative z-10 flex flex-col gap-6">
+            <div>
+              <span class="micro-label text-blue-700 bg-blue-100/80 px-2.5 py-1 rounded border border-blue-200">Stage 1 of 5</span>
+              <h2 class="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight mt-5">Resume & Job<br>Diagnostic</h2>
+              <p class="text-[13px] text-slate-500 dark:text-slate-400 mt-3 leading-relaxed">
+                We evaluate your profile against target job criteria using advanced ATS metrics to calibrate the interview difficulty and pressure points.
+              </p>
+            </div>
+
+            <hr class="border-slate-200 dark:border-slate-700 my-2">
+
+            <div class="space-y-3.5">
+              <div class="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                <div class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 text-xs">🔍</div>
+                <span>Technical Gap Detection</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                <div class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 text-xs">🎯</div>
+                <span>Competency Alignment</span>
+              </div>
+              <div class="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                <div class="w-7 h-7 rounded-lg bg-white dark:bg-slate-900 shadow-sm flex items-center justify-center border border-slate-200 dark:border-slate-700 text-xs">⚡</div>
+                <span>Multi-Agent Playbook Prep</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Form: Inputs -->
+        <div class="md:w-7/12 p-8 flex flex-col gap-7 bg-white dark:bg-slate-900 relative z-10">
+          <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-[13px] font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                Your Resume (CV)
+              </label>
+              <div class="flex items-center gap-3">
+                <button id="btn-upload-pdf" onclick="triggerPdfUpload()" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-300 font-medium transition flex items-center gap-1">
+                  📎 Upload PDF
+                </button>
+                <button onclick="loadSampleData()" class="text-xs text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 font-medium hover:underline transition flex items-center gap-1">
+                  🪄 Use Sample
+                </button>
+              </div>
+            </div>
+            
+            <textarea id="cv-input" rows="5" placeholder="Paste your resume text here, or summarize your key professional experience..." 
+              class="w-full bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-300 rounded-xl p-4 text-[13px] text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 focus:bg-blue-50/30 leading-relaxed transition resize-none"></textarea>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <label class="text-[13px] font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              Target Job Description
+            </label>
+            <textarea id="job-input" rows="3" placeholder="Paste target job requirements and responsibilities here..." 
+              class="w-full bg-slate-50 dark:bg-slate-800/50 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-300 rounded-xl p-4 text-[13px] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-blue-50/30 leading-relaxed transition resize-none"></textarea>
+          </div>
+
+          <div class="flex justify-end mt-1">
+            <button id="btn-run-analysis" onclick="analyzeCVAndJob()" class="w-auto px-6 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 text-white font-medium text-[13px] hover:bg-slate-800 dark:hover:bg-slate-700 hover:-translate-y-0.5 focus:ring-4 focus:ring-slate-200 transition-all shadow-md flex items-center gap-2">
+              <span>Analyze Match & Gaps</span>
+ <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" class="opacity-70">
+ <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+ </svg>
+ </button>
+ </div>
+ </div>
+ </div>
+
+ <!-- Diagnostic Summary Card (Appears after analysis) -->
+ <div id="analysis-result-panel" class="hidden card-frame p-6 sm:p-8 flex-col gap-6">
+ <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center">
+            <span class="micro-label text-[9px] text-slate-500 dark:text-slate-400">ATS</span>
+            <span class="text-xl font-semibold text-slate-900 dark:text-white font-mono" id="ats-score-display">76%</span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-semibold text-slate-900 dark:text-white">Assessed Compatibility</h3>
+              <span class="micro-label text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 font-semibold">Competitive</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="analysis-summary-text">Summary...</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('analysis-result-panel').classList.add('hidden'); document.getElementById('cv-form-container').classList.remove('hidden');" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline font-medium">
+          Edit Data
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="card-inset p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="micro-label text-emerald-700 dark:text-emerald-400 font-semibold mb-2">Confirmed Competencies</div>
+          <div class="flex flex-wrap gap-1.5" id="present-keywords"></div>
+        </div>
+        <div class="card-inset p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
+          <div class="micro-label text-amber-700 dark:text-amber-400 font-semibold mb-2">Critical Gaps to Defend</div>
+          <div class="flex flex-wrap gap-1.5" id="missing-keywords"></div>
+        </div>
+      </div>
+
+      <div class="card-inset p-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
+        <div class="micro-label text-blue-700 dark:text-blue-400 font-semibold mb-1">Interviewer Playbook & Questioning Strategy</div>
+        <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed" id="analysis-focus-text">Interviewer strategy...</p>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <button onclick="startSimulationFromAnalysis('one-on-one')" class="flex-1 py-2.5 rounded-lg bg-slate-900 dark:bg-slate-100 text-white font-medium text-xs hover:bg-slate-800 dark:hover:bg-slate-700 transition shadow-sm">
+          Start 1:1 Tech Lead Interview
+        </button>
+        <button onclick="startSimulationFromAnalysis('group')" class="flex-1 py-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-medium text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-sm">
+          Start Group Dynamics Simulation
+        </button>
+      </div>
+    </div>
+
+ </div>
+
+ <!-- ======================================================== -->
+ <!-- ETAPA 2 & 3: STUDIO DE SIMULAÇÃO IMERSIVO (MEETING UX) -->
+ <!-- ======================================================== -->
+ <div id="stage-simulation" class="hidden flex-col gap-5 relative">
+ 
+ <!-- Video Stage (Premium Light Studio) -->
+ <div class="relative bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 min-h-[520px] flex flex-col justify-between overflow-hidden shadow-sm">
+ 
+ <!-- Subtle Studio Background Effects -->
+ <div class="absolute top-0 right-0 w-[40rem] h-[40rem] bg-blue-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+ <div class="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-emerald-50/50 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none"></div>
+
+ <!-- Header Info Bar -->
+ <div class="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between z-10 w-full">
+ <div class="flex items-center gap-3 bg-white dark:bg-slate-900 backdrop-blur-sm px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm w-full md:w-auto overflow-hidden">
+ <span class="relative flex h-2.5 w-2.5 shrink-0">
+ <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+ <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+ </span>
+ <span class="text-[13px] font-semibold text-slate-900 dark:text-white truncate max-w-[150px] sm:max-w-xs" id="context-title">Case: Black Friday Production Outage</span>
+ <div class="w-px h-4 bg-slate-300 mx-1 shrink-0"></div>
+ <span class="text-[11px] uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400 shrink-0" id="context-subtitle">Group Dynamics</span>
+ </div>
+ 
+ <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+ <div class="bg-white dark:bg-slate-900 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2">
+ <span class="text-slate-400 dark:text-slate-500 text-xs">⏱️</span>
+ <span class="font-mono text-[13px] text-slate-800 dark:text-slate-200 font-semibold tracking-tight" id="timer-display">05:00</span>
+ </div>
+ <button onclick="toggleTranscriptDrawer()" class="text-[13px] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-900 backdrop-blur-sm hover:bg-white px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm font-medium transition flex items-center gap-1.5">
+ <span>📝</span> Transcript
+ </button>
+ </div>
+ </div>
+
+ <!-- Participants Grid (Modern Video Tiles) -->
+ <div id="call-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 my-auto z-10 w-full max-w-5xl mx-auto py-8">
+ 
+ <!-- Tile 1: Sofia -->
+ <div id="card-sofia" class="bg-white dark:bg-slate-900 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center transition-all min-h-[160px] relative shadow-sm hover:shadow-md group">
+ <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 border border-white shadow-sm flex items-center justify-center text-2xl mb-3 group-hover:scale-105 transition-transform">👩‍💼</div>
+ <h4 class="text-[13px] font-semibold text-slate-900 dark:text-white ">Sofia Valente</h4>
+ <span class="micro-label !text-[9px] text-slate-500 dark:text-slate-400 mt-1">HR Facilitator</span>
+ </div>
+
+ <!-- Tile 2: Carlos / Rodrigo -->
+ <div id="card-carlos" class="bg-white dark:bg-slate-900 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center transition-all min-h-[160px] relative shadow-sm hover:shadow-md group">
+ <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 border border-white shadow-sm flex items-center justify-center text-2xl mb-3 group-hover:scale-105 transition-transform">👨‍💻</div>
+ <h4 class="text-[13px] font-semibold text-slate-900 dark:text-white ">Carlos Mendes</h4>
+ <span class="micro-label !text-[9px] text-slate-500 dark:text-slate-400 mt-1">Skeptical / Tech Lead</span>
+ </div>
+
+ <!-- Tile 3: Beatriz -->
+ <div id="card-beatriz" class="bg-white dark:bg-slate-900 backdrop-blur-sm border border-slate-200 dark:border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center transition-all min-h-[160px] relative shadow-sm hover:shadow-md group">
+ <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 border border-white shadow-sm flex items-center justify-center text-2xl mb-3 group-hover:scale-105 transition-transform">👩‍🔬</div>
+ <h4 class="text-[13px] font-semibold text-slate-900 dark:text-white ">Beatriz Lima</h4>
+ <span class="micro-label !text-[9px] text-slate-500 dark:text-slate-400 mt-1">Agile / Product</span>
+ </div>
+
+ <!-- Tile 4: You -->
+ <div id="card-user" class="bg-white dark:bg-slate-900 border-2 border-blue-400 rounded-2xl p-5 flex flex-col items-center justify-center transition-all min-h-[160px] relative shadow-md ring-4 ring-blue-50">
+ <div class="absolute top-3 right-3 w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+ <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 flex items-center justify-center text-2xl mb-3">🧑‍💼</div>
+ <h4 class="text-[13px] font-semibold text-slate-900 dark:text-white" id="card-user-title">You (Candidate)</h4>
+ <span class="micro-label !text-[9px] text-blue-600 mt-1" id="status-user">Mic Ready</span>
+ </div>
+
+ </div>
+
+ <!-- Live Floating Subtitle / Closed Caption Overlay -->
+ <div class="absolute bottom-24 left-1/2 -translate-x-1/2 w-full max-w-xl z-20 pointer-events-none flex justify-center">
+ <div class="bg-slate-900 dark:bg-slate-100 backdrop-blur-md px-6 py-4 rounded-2xl text-center shadow-xl border border-white/10 max-w-lg w-full">
+ <div class="text-[10px] font-mono text-slate-300 dark:text-slate-600 font-semibold mb-1" id="caption-speaker">Sofia Valente (HR Facilitator)</div>
+ <p class="text-[13px] text-white dark:text-slate-900 leading-relaxed font-medium" id="caption-text">
+ Click "Start" below to begin the debate with the participants.
+ </p>
+ </div>
+ </div>
+
+ <!-- Centered Floating Meeting Control Dock -->
+ <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30">
+ <div class="bg-white dark:bg-slate-900 backdrop-blur-xl border border-slate-200 dark:border-slate-700 p-2 rounded-2xl flex items-center justify-center gap-2 shadow-xl ring-1 ring-black/5">
+ <button id="btn-start-sim" onclick="toggleSimulation()" class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-700 text-white dark:text-slate-900 text-[13px] font-medium transition-all shadow-md flex items-center gap-2">
+ <span class="text-emerald-400">▶</span> <span id="btn-start-sim-text">Start</span>
+ </button>
+ 
+ <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+
+ <button id="btn-mic" onclick="toggleMicrophone()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[13px] font-medium transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700 ">
+ <span id="mic-icon">🎙️</span> <span id="mic-text">Microphone</span>
+ </button>
+ <button onclick="toggleTextInputModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[13px] font-medium transition-all flex items-center gap-2 border border-slate-200 dark:border-slate-700 ">
+ <span>💬</span> <span id="btn-type-text">Type</span>
+ </button>
+ 
+ <div class="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+
+ <button onclick="finishSimulationAndGenerateReport()" class="px-4 py-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 text-red-600 text-[13px] font-medium transition-all flex items-center gap-2">
+ <span>🔴</span> <span id="btn-end-text">End Simulation</span>
+ </button>
+ </div>
+ </div>
+
+ <!-- Retractable Transcript Drawer -->
+ <div id="transcript-drawer" class="hidden absolute top-0 right-0 h-full w-80 bg-white dark:bg-slate-900 backdrop-blur-xl border-l border-slate-200 dark:border-slate-700 p-5 flex-col justify-between z-40 shadow-2xl transition-transform">
+ <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 ">
+ <span class="text-[13px] font-semibold text-slate-900 dark:text-white " id="drawer-title">Dialogue Transcript</span>
+ <button onclick="toggleTranscriptDrawer()" class="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 w-7 h-7 rounded-full flex items-center justify-center transition">✕</button>
+ </div>
+ <div id="dialogue-feed" class="flex-1 overflow-y-auto py-4 flex flex-col gap-4 text-[13px]"></div>
+ <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs text-slate-500 dark:text-slate-400 ">
+ <span>Bot Audio:</span>
+ <label class="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium">
+ <input type="checkbox" id="toggle-audio-synthesis" checked class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4">
+ <span>Voice Active</span>
+ </label>
+ </div>
+ </div>
+
+ </div>
+
+ </div>
+
+ <!-- ========================================== -->
+ <!-- ETAPA 4: SCORECARD (EXECUTIVE DOCUMENT)   -->
+ <!-- ========================================== -->
+ <div id="stage-report" class="hidden flex-col gap-6 max-w-4xl mx-auto w-full">
+   <div class="card-frame p-8 flex flex-col gap-8 bg-white dark:bg-slate-900 relative overflow-hidden shadow-sm">
+     
+     <!-- Subtle watermark/background -->
+     <div class="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-slate-50 dark:bg-slate-800/50 rounded-full border-[20px] border-slate-100 dark:border-slate-800 opacity-50 pointer-events-none"></div>
+
+     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pb-6 border-b border-slate-100 dark:border-slate-800 relative z-10">
+       <div>
+         <div class="flex items-center gap-2 mb-1.5">
+           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+           <span class="micro-label !text-[9px] text-emerald-600 font-semibold">Evaluation Complete</span>
+         </div>
+         <h2 class="text-2xl font-semibold text-slate-900 dark:text-white tracking-tight">Executive Scorecard</h2>
+         <p class="text-[13px] text-slate-500 dark:text-slate-400 mt-2 max-w-md leading-relaxed">Holistic cross-evaluation between your Resume Fit and real-time Live Interview Performance.</p>
+       </div>
+       
+       <div class="flex items-center gap-3">
+         <!-- Score 1: CV Match (ATS) -->
+         <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-2xl flex flex-col items-center shadow-sm">
+           <div class="micro-label text-[10px] text-slate-400 dark:text-slate-500 mb-1">1. Resume Score (ATS)</div>
+           <div class="text-2xl font-semibold text-blue-600 dark:text-blue-400 font-mono tracking-tight" id="scorecard-cv-match">--%</div>
+         </div>
+
+         <!-- Score 2: Interview Performance (AI Live) -->
+         <div class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-5 py-3 rounded-2xl flex flex-col items-center shadow-sm ring-2 ring-emerald-500/20">
+           <div class="micro-label text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mb-1">2. Live Interview Grade</div>
+           <div class="text-3xl font-semibold text-slate-900 dark:text-white font-mono tracking-tight" id="overall-score-display">--<span class="text-lg text-slate-400 dark:text-slate-500 font-medium">/10</span></div>
+         </div>
+       </div>
+     </div>
+
+     <div class="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10 items-center">
+       
+       <!-- Radar Chart Column -->
+       <div class="md:col-span-5 flex flex-col items-center justify-center p-2">
+         <div class="w-full max-w-[280px] aspect-square relative">
+           <canvas id="skillsRadarChart"></canvas>
+         </div>
+         <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium text-center mt-4 uppercase tracking-wider">Competency Mapping</p>
+       </div>
+
+       <!-- Progress Bars Column -->
+       <div class="md:col-span-7 flex flex-col gap-4" id="skills-bars-container">
+         <!-- Skill 1 -->
+         <div class="group p-4 flex flex-col gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-slate-300 transition-colors shadow-sm">
+           <div class="flex justify-between items-center text-[13px]">
+             <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2" id="skill-name-0"><span class="text-base">🤝</span> Leadership & Mediation</span>
+             <span class="font-mono text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-800" id="skill-score-0">-- / 10</span>
+           </div>
+           <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+             <div class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-700" id="skill-bar-0" style="width: 0%"></div>
+           </div>
+           <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1" id="skill-feedback-0">Awaiting interview completion for AI evaluation.</p>
+         </div>
+
+         <!-- Skill 2 -->
+         <div class="group p-4 flex flex-col gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-slate-300 transition-colors shadow-sm">
+           <div class="flex justify-between items-center text-[13px]">
+             <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2" id="skill-name-1"><span class="text-base">🗣️</span> Assertive Communication</span>
+             <span class="font-mono text-blue-600 font-semibold bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800" id="skill-score-1">-- / 10</span>
+           </div>
+           <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+             <div class="bg-gradient-to-r from-blue-400 to-blue-500 h-full rounded-full transition-all duration-700" id="skill-bar-1" style="width: 0%"></div>
+           </div>
+           <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1" id="skill-feedback-1">Awaiting interview completion for AI evaluation.</p>
+         </div>
+
+         <!-- Skill 3 -->
+         <div class="group p-4 flex flex-col gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-slate-300 transition-colors shadow-sm">
+           <div class="flex justify-between items-center text-[13px]">
+             <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2" id="skill-name-2"><span class="text-base">🛡️</span> CV Gap Defense</span>
+             <span class="font-mono text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700" id="skill-score-2">-- / 10</span>
+           </div>
+           <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+             <div class="bg-gradient-to-r from-slate-500 to-slate-600 h-full rounded-full transition-all duration-700" id="skill-bar-2" style="width: 0%"></div>
+           </div>
+           <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1" id="skill-feedback-2">Awaiting interview completion for AI evaluation.</p>
+         </div>
+
+         <!-- Skill 4 -->
+         <div class="group p-4 flex flex-col gap-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-slate-300 transition-colors shadow-sm">
+           <div class="flex justify-between items-center text-[13px]">
+             <span class="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2" id="skill-name-3"><span class="text-base">⏱️</span> Time & Focus Management</span>
+             <span class="font-mono text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-100 dark:border-emerald-800" id="skill-score-3">-- / 10</span>
+           </div>
+           <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700">
+             <div class="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-full transition-all duration-700" id="skill-bar-3" style="width: 0%"></div>
+           </div>
+           <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1" id="skill-feedback-3">Awaiting interview completion for AI evaluation.</p>
+         </div>
+       </div>
+     </div>
+
+     <button onclick="switchStage('match')" class="w-full py-4 rounded-xl bg-slate-900 dark:bg-slate-100 text-white font-medium text-[13px] hover:bg-slate-800 dark:hover:bg-slate-700 focus:ring-4 focus:ring-slate-200 transition shadow-md flex items-center justify-center gap-2 mt-2">
+       <span>Explore Recommended Roles with Verified Scorecard</span>
+       <span class="text-slate-400 dark:text-slate-500">→</span>
+     </button>
+
+   </div>
+ </div>
+
+ <!-- ======================================================== -->
+ <!-- ETAPA 5: MATCHMAKING (MASTER-DETAIL SPLIT VIEW)          -->
+ <!-- ======================================================== -->
+ <div id="stage-match" class="hidden flex-col gap-6">
+   
+   <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
+     <div>
+       <span class="micro-label text-emerald-600 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Opportunities & Radar</span>
+       <h2 class="text-xl font-semibold text-slate-900 dark:text-white mt-1">Recommended Roles</h2>
+     </div>
+     <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 flex text-xs shadow-sm w-full sm:w-auto">
+       <button id="view-mode-candidate" onclick="switchMatchView('candidate')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium shadow-sm transition">Candidate View</button>
+       <button id="view-mode-recruiter" onclick="switchMatchView('recruiter')" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium transition">Recruiter View</button>
+     </div>
+   </div>
+
+   <!-- Master-Detail 2-Column Layout -->
+   <div id="match-candidate-view" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+     
+     <!-- Left Column: Jobs List -->
+     <div class="lg:col-span-5 flex flex-col gap-3.5">
+       <div onclick="selectJob(0)" class="bg-white dark:bg-slate-900 border-2 border-slate-900 dark:border-slate-500 rounded-xl p-5 cursor-pointer shadow-sm relative overflow-hidden group" id="job-card-0">
+         <div class="absolute top-0 right-0 w-1 h-full bg-emerald-500"></div>
+         <div class="flex justify-between items-center mb-1">
+           <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Fintech Nexus</span>
+           <span class="micro-label !text-[9px] text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200">95% Match</span>
+         </div>
+         <h4 class="text-[14px] font-semibold text-slate-900 dark:text-white">Tech Lead / Senior Fullstack</h4>
+         <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5"><span class="text-slate-400 dark:text-slate-500">📍</span> Remote • $120k - $160k</p>
+       </div>
+
+       <div onclick="selectJob(1)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-400 hover:shadow-sm transition group" id="job-card-1">
+         <div class="flex justify-between items-center mb-1">
+           <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">HealthTech SaaS</span>
+           <span class="micro-label !text-[9px] text-emerald-700 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200">89% Match</span>
+         </div>
+         <h4 class="text-[14px] font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">Senior Software Engineer</h4>
+         <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5"><span class="text-slate-400 dark:text-slate-500">📍</span> Hybrid • $110k - $140k</p>
+       </div>
+
+       <div onclick="selectJob(2)" class="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-5 cursor-pointer hover:border-slate-300 hover:bg-white transition group" id="job-card-2">
+         <div class="flex justify-between items-center mb-1">
+           <span class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">Community & Peers</span>
+           <span class="micro-label !text-[9px] text-blue-700 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200">Networking</span>
+         </div>
+         <h4 class="text-[14px] font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">Group Practice Dynamics</h4>
+         <p class="text-[12px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1.5"><span class="text-slate-400 dark:text-slate-500">👥</span> +42 candidates practicing online.</p>
+       </div>
+     </div>
+
+     <!-- Right Column: Selected Job Details -->
+     <div class="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-8 flex flex-col justify-between min-h-[400px] shadow-sm relative overflow-hidden" id="job-detail-pane">
+       <!-- Decorative Background Blur -->
+       <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-50 rounded-full blur-3xl pointer-events-none"></div>
+
+       <div class="relative z-10">
+         <div class="flex justify-between items-start pb-5 border-b border-slate-100 dark:border-slate-800">
+           <div>
+             <span class="micro-label text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded border border-emerald-100 dark:border-emerald-800" id="detail-job-company">Fintech Nexus</span>
+             <h3 class="text-xl font-semibold text-slate-900 dark:text-white mt-3" id="detail-job-title">Tech Lead / Senior Fullstack</h3>
+           </div>
+           <div class="text-right">
+             <span class="block text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider mb-1">Salary Range</span>
+             <span class="text-[14px] font-mono text-slate-800 dark:text-slate-200 font-semibold bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700" id="detail-job-salary">$120k - $160k</span>
+           </div>
+         </div>
+
+         <div class="py-6 flex flex-col gap-6 text-[13px] text-slate-600 dark:text-slate-400">
+           <div>
+             <h4 class="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-2">Role Overview</h4>
+             <p id="detail-job-desc" class="leading-relaxed">Technical leadership of squads delivering high-throughput real-time payment solutions. Responsible for microservices architecture and mentoring mid-level engineers.</p>
+           </div>
+           <div>
+             <h4 class="text-xs font-semibold text-slate-900 dark:text-white uppercase tracking-wider mb-2.5">Stack & Requirements</h4>
+             <div class="flex flex-wrap gap-2" id="detail-job-tags">
+               <span class="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">TypeScript</span>
+               <span class="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Next.js</span>
+               <span class="text-xs font-medium bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Node.js</span>
+               <span class="text-xs font-medium bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-md text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800">Tech Leadership</span>
+             </div>
+           </div>
+         </div>
+       </div>
+
+       <div class="relative z-10 pt-4 border-t border-slate-100 dark:border-slate-800">
+         <button onclick="applyJob(this)" class="w-full py-4 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-medium text-[13px] hover:bg-slate-800 dark:hover:bg-slate-700 focus:ring-4 focus:ring-slate-200 transition-all shadow-md flex items-center justify-center gap-2 group">
+           <span>Apply with Verified Scorecard</span>
+           <span class="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded font-bold ml-1 tracking-wide">VERIFIED MATCH</span>
+         </button>
+       </div>
+     </div>
+
+   </div>
+
+   <!-- Recruiter View -->
+   <div id="match-recruiter-view" class="hidden bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 flex-col gap-4 shadow-sm relative overflow-hidden">
+     <div class="absolute left-0 top-0 w-1 h-full bg-blue-500"></div>
+     <div class="flex justify-between items-center">
+       <div class="flex items-center gap-4">
+         <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center text-2xl">🧑‍💼</div>
+         <div>
+           <div class="flex items-center gap-2 mb-1">
+             <h4 class="text-[14px] font-semibold text-slate-900 dark:text-white">You (Assessed Candidate)</h4>
+             <span class="micro-label !text-[9px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">Verified</span>
+           </div>
+           <p class="text-[12px] text-slate-500 dark:text-slate-400">Senior Fullstack • High performance in Crisis Management and Conflict Mediation</p>
+         </div>
+       </div>
+       <button onclick="alert('Invitation for final interview sent!')" class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-700 text-white dark:text-slate-900 font-medium text-[13px] transition shadow-md">
+         Invite to Final Round
+       </button>
+     </div>
+   </div>
+
+ </div>
+
+    <!-- ======================================================== -->
+    <!-- ETAPA 6: HISTÓRICO DE SIMULAÇÕES E NOTAS               -->
+    <!-- ======================================================== -->
+    <div id="stage-history" class="hidden flex-col gap-6 max-w-4xl mx-auto w-full">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700 pb-4">
+        <div>
+          <span class="micro-label text-blue-600 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Memory & Evolution</span>
+          <h2 class="text-xl font-semibold text-slate-900 dark:text-white mt-1">Interview Session History</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Review complete dialogue transcripts, answers, and long-term grade evolution.</p>
+        </div>
+        <button onclick="clearAllHistory()" class="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-400 font-medium transition flex items-center gap-1">
+          🗑️ Clear History
+        </button>
+      </div>
+
+      <!-- History Sessions Feed -->
+      <div id="history-feed" class="flex flex-col gap-4">
+        <!-- Dynamic history cards inserted here -->
+      </div>
+    </div>
+
+  </main>
+
+ <!-- MODAL: TEXT INPUT -->
+ <div id="modal-text-input" class="hidden fixed inset-0 bg-slate-900 dark:bg-slate-100 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+ <div class="card-frame max-w-lg w-full p-5 flex flex-col gap-4 bg-white dark:bg-slate-900 shadow-2xl">
+ <div class="flex justify-between items-center">
+ <h4 class="text-xs font-semibold text-slate-900 dark:text-white ">Digitar Mensagem para os Participantes</h4>
+ <button onclick="toggleTextInputModal()" class="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white ">✕</button>
+ </div>
+ <textarea id="user-text-input" rows="3" placeholder="Digite sua proposta ou argumento..." 
+ onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendUserMessage(); toggleTextInputModal(); }"
+ class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-slate-400 focus:bg-white "></textarea>
+ <div class="flex justify-end gap-2">
+ <button onclick="toggleTextInputModal()" class="px-3 py-1.5 rounded text-xs text-slate-500 dark:text-slate-400 ">Cancelar</button>
+ <button onclick="sendUserMessage(); toggleTextInputModal();" class="px-4 py-1.5 rounded bg-slate-900 dark:bg-slate-100 text-white font-medium text-xs">Enviar</button>
+ </div>
+ </div>
+ </div>
+
+ <!-- FOOTER -->
+ <footer class="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-3 px-6 text-center text-[11px] text-slate-500 dark:text-slate-400 ">
+ TalentFlow AI — Clean Light Design System
+ </footer>
+
+ <script src="/static/app.js"></script>
+</body>
+</html>
