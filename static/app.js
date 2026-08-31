@@ -128,7 +128,7 @@ function switchStage(stage) {
 }
 
 let radarChartInstance = null;
-function renderRadarChart() {
+function renderRadarChart(customScores = null, customLabels = null) {
   const ctx = document.getElementById('skillsRadarChart');
   if (!ctx) return;
   
@@ -136,31 +136,35 @@ function renderRadarChart() {
     radarChartInstance.destroy();
   }
 
+  const labels = customLabels || ['Leadership & Mediation', 'Assertive Communication', 'CV Gap Defense', 'Time & Focus'];
+  const scores = customScores || state.lastSkillsScores || [4.0, 4.0, 4.0, 4.0];
+  const targetScores = [8.0, 8.0, 8.0, 8.0];
+
   radarChartInstance = new Chart(ctx, {
     type: 'radar',
     data: {
-      labels: ['Leadership', 'Communication', 'Gap Defense', 'Time Management', 'Technical Vision'],
+      labels: labels,
       datasets: [{
         label: 'Your Performance',
-        data: [9.2, 8.8, 8.5, 9.0, 8.9],
-        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+        data: scores,
+        backgroundColor: 'rgba(16, 185, 129, 0.25)',
         borderColor: 'rgba(16, 185, 129, 1)',
         pointBackgroundColor: 'rgba(16, 185, 129, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgba(16, 185, 129, 1)',
-        borderWidth: 2,
+        borderWidth: 2.5,
       }, {
         label: 'Role Target',
-        data: [7.5, 8.0, 7.0, 7.5, 8.5],
+        data: targetScores,
         backgroundColor: 'rgba(148, 163, 184, 0.1)',
-        borderColor: 'rgba(148, 163, 184, 0.5)',
+        borderColor: 'rgba(148, 163, 184, 0.6)',
         pointBackgroundColor: 'rgba(148, 163, 184, 1)',
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgba(148, 163, 184, 1)',
         borderWidth: 2,
-        borderDash: [5, 5]
+        borderDash: [4, 4]
       }]
     },
     options: {
@@ -168,11 +172,13 @@ function renderRadarChart() {
       maintainAspectRatio: true,
       scales: {
         r: {
-          angleLines: { color: 'rgba(0,0,0,0.05)' },
-          grid: { color: 'rgba(0,0,0,0.05)' },
+          min: 0,
+          max: 10,
+          angleLines: { color: 'rgba(0,0,0,0.08)' },
+          grid: { color: 'rgba(0,0,0,0.08)' },
           pointLabels: {
-            font: { size: 10, family: 'Inter, sans-serif', weight: '600' },
-            color: '#64748b'
+            font: { size: 10.5, family: 'Inter, sans-serif', weight: '600' },
+            color: '#334155'
           },
           ticks: { display: false, stepSize: 2 }
         }
@@ -182,9 +188,9 @@ function renderRadarChart() {
           position: 'bottom',
           labels: {
             usePointStyle: true,
-            boxWidth: 6,
-            font: { size: 11, family: 'Inter, sans-serif' },
-            padding: 20
+            boxWidth: 7,
+            font: { size: 11, family: 'Inter, sans-serif', weight: '500' },
+            padding: 16
           }
         }
       }
@@ -650,12 +656,11 @@ async function finishSimulationAndGenerateReport() {
 
       saveSessionToHistory(historyItem);
       
-      // Update Radar Chart data dynamically
-      if (radarChartInstance) {
-        const scores = evalData.skills.map(s => s.score);
-        radarChartInstance.data.datasets[0].data = scores;
-        radarChartInstance.update();
-      }
+      // Update Radar Chart data dynamically with 100% exact alignment
+      const scores = evalData.skills.map(s => s.score);
+      const labels = evalData.skills.map(s => s.name);
+      state.lastSkillsScores = scores;
+      renderRadarChart(scores, labels);
     }
   } catch (err) {
     console.error("Erro na avaliação:", err);
