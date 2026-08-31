@@ -81,18 +81,18 @@ function switchStage(stage) {
     }
   }
 
-  ['cv', 'group', 'one-on-one', 'report', 'match', 'history'].forEach(s => {
+  ['cv', 'group', 'one-on-one', 'report', 'history'].forEach(s => {
     const btn = document.getElementById(`tab-${s}`);
     if (btn) {
       if (s === stage) {
-        btn.className = 'px-3.5 py-1.5 rounded transition-colors bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-medium text-xs shadow-sm';
+        btn.className = 'px-3.5 py-1.5 rounded-lg transition-colors bg-white text-slate-900 font-bold text-xs shadow-sm';
       } else {
-        btn.className = 'px-3.5 py-1.5 rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs';
+        btn.className = 'px-3.5 py-1.5 rounded-lg transition-colors text-slate-600 hover:text-slate-900 text-xs font-medium';
       }
     }
   });
 
-  ['stage-landing', 'stage-cv', 'stage-simulation', 'stage-report', 'stage-match', 'stage-history'].forEach(id => {
+  ['stage-landing', 'stage-cv', 'stage-simulation', 'stage-report', 'stage-history'].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.classList.add('hidden');
@@ -121,9 +121,6 @@ function switchStage(stage) {
   } else if (stage === 'report') {
     showStage('stage-report');
     renderRadarChart();
-  } else if (stage === 'match') {
-    showStage('stage-match');
-    selectJob(0);
   } else if (stage === 'history') {
     showStage('stage-history');
     renderHistoryUI();
