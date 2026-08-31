@@ -200,32 +200,40 @@ function renderRadarChart(customScores = null, customLabels = null) {
 
 function setupSimulationUI(mode) {
   const ctx = state.analysisContext || {};
-  const expertName = ctx.interviewer_name || 'Carlos Mendes';
-  const expertRole = ctx.interviewer_role || 'Senior Tech Lead';
-  const expertAvatar = ctx.interviewer_avatar || '👨‍💻';
+  const expertName = ctx.interviewer_name || 'Executive Interviewer';
+  const expertAvatar = ctx.interviewer_avatar || '👨‍💼';
   const domainName = ctx.domain || 'Domain Strategy';
+  const grid = document.getElementById('call-grid');
 
   if (mode === 'one-on-one') {
-    document.getElementById('context-subtitle').innerText = `1:1 ${domainName} Interview`;
-    document.getElementById('context-title').innerText = `Executive Round with ${expertName} (${expertRole})`;
+    document.getElementById('context-subtitle').innerText = `1:1 Executive Interview`;
+    document.getElementById('context-title').innerText = `Interview with ${expertName}`;
     
     document.getElementById('card-sofia').classList.add('hidden');
     document.getElementById('card-beatriz').classList.add('hidden');
     
+    // Center the 2 cards in 1:1 mode
+    if (grid) {
+      grid.className = 'grid grid-cols-1 sm:grid-cols-2 gap-8 my-auto z-10 w-full max-w-3xl mx-auto py-10';
+    }
+
     const cardCarlos = document.getElementById('card-carlos');
     cardCarlos.querySelector('h4').innerText = expertName;
-    cardCarlos.querySelector('span').innerText = expertRole;
     cardCarlos.querySelector('div').innerText = expertAvatar;
   } else {
     document.getElementById('context-subtitle').innerText = `Group Dynamics • ${domainName}`;
-    document.getElementById('context-title').innerText = `Case: Critical Crisis & Cross-Team Strategy Alignment`;
+    document.getElementById('context-title').innerText = `Case: Strategic Alignment & Conflict Resolution`;
     
     document.getElementById('card-sofia').classList.remove('hidden');
     document.getElementById('card-beatriz').classList.remove('hidden');
     
+    // 4 columns in Group Dynamics
+    if (grid) {
+      grid.className = 'grid grid-cols-2 md:grid-cols-4 gap-5 my-auto z-10 w-full max-w-6xl mx-auto py-10';
+    }
+
     const cardCarlos = document.getElementById('card-carlos');
     cardCarlos.querySelector('h4').innerText = expertName;
-    cardCarlos.querySelector('span').innerText = expertRole;
     cardCarlos.querySelector('div').innerText = expertAvatar;
   }
 }
