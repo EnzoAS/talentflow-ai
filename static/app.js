@@ -331,13 +331,14 @@ async function requestBotTurn(userMsg = '') {
     const bot = await res.json();
     setSpeakingState(bot.speaker_id);
     
-    // Update live closed caption overlay
+    // 1. Instantly display live closed captions & dialogue on screen (0ms perceived delay)
     document.getElementById('caption-speaker').innerText = `${bot.speaker_name} (${bot.role})`;
     document.getElementById('caption-text').innerText = `"${bot.text}"`;
 
     appendDialogue(bot.speaker_id, bot.speaker_name, bot.avatar, bot.text);
     updateMetrics(bot.tokens_estimated || 45, bot.speaker_id, bot.text);
 
+    // 2. Play Neural Voice in background with immediate visual feedback
     speakText(bot.text, bot.speaker_id, () => {
       setSpeakingState(null);
       document.getElementById('caption-speaker').innerText = 'Your Turn to Speak';

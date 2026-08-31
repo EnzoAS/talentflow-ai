@@ -149,7 +149,11 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     resp = client.models.generate_content(
         model=MODEL_ID,
         contents=sys_prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json")
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            max_output_tokens=150,
+            temperature=0.7
+        )
     )
     
     try:
