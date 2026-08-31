@@ -1,4 +1,15 @@
+// Generate or retrieve persistent Anonymous User Session ID
+function getOrCreateUserId() {
+  let uid = localStorage.getItem('talentflow_user_id');
+  if (!uid) {
+    uid = 'user_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36);
+    localStorage.setItem('talentflow_user_id', uid);
+  }
+  return uid;
+}
+
 const state = {
+  userId: getOrCreateUserId(),
   currentStage: 'landing',
   currentMode: 'group',
   isRunning: false,
@@ -541,7 +552,8 @@ async function finishSimulationAndGenerateReport() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         dialogue_history: state.dialogueHistory,
-        job_context: state.analysisContext
+        job_context: state.analysisContext,
+        user_id: state.userId
       })
     });
     

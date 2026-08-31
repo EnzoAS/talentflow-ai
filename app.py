@@ -170,6 +170,7 @@ async def generate_speech_endpoint(req: TTSRequest):
 class EvaluationRequest(BaseModel):
     dialogue_history: list
     job_context: dict = None
+    user_id: str = "anonymous_default"
 
 @app.post("/api/evaluate-simulation")
 def evaluate_simulation_endpoint(req: EvaluationRequest):
@@ -235,13 +236,14 @@ def evaluate_simulation_endpoint(req: EvaluationRequest):
             ]
         }
 
-    # Asynchronously persist to Google Cloud Firestore (Memory & Audit)
+    # Asynchronously persist to Google Cloud Firestore with User Partitioning
     try:
         import datetime
         from google.cloud import firestore
         db = firestore.Client()
-        doc_ref = db.collection("interview_sessions").document()
-        doc_ref.set({
+        user_ref = db.collection("users").document(req.user_id)
+        session_ref = user_ref.collection("sessions").document()
+        session_ref.set({
             "timestamp": datetime.datetime.utcnow().isoformat(),
             "overall_score": eval_result.get("overall_score"),
             "summary": eval_result.get("summary"),
