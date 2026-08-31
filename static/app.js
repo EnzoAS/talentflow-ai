@@ -196,26 +196,34 @@ function renderRadarChart() {
 }
 
 function setupSimulationUI(mode) {
+  const ctx = state.analysisContext || {};
+  const expertName = ctx.interviewer_name || 'Carlos Mendes';
+  const expertRole = ctx.interviewer_role || 'Senior Tech Lead';
+  const expertAvatar = ctx.interviewer_avatar || '👨‍💻';
+  const domainName = ctx.domain || 'Domain Strategy';
+
   if (mode === 'one-on-one') {
-    document.getElementById('context-subtitle').innerText = '1:1 Technical Interview';
-    document.getElementById('context-title').innerText = 'System Design Round with Carlos (Senior Tech Lead)';
+    document.getElementById('context-subtitle').innerText = `1:1 ${domainName} Interview`;
+    document.getElementById('context-title').innerText = `Executive Round with ${expertName} (${expertRole})`;
     
     document.getElementById('card-sofia').classList.add('hidden');
     document.getElementById('card-beatriz').classList.add('hidden');
     
     const cardCarlos = document.getElementById('card-carlos');
-    cardCarlos.querySelector('h4').innerText = 'Carlos Mendes';
-    cardCarlos.querySelector('span').innerText = 'Senior Tech Lead';
+    cardCarlos.querySelector('h4').innerText = expertName;
+    cardCarlos.querySelector('span').innerText = expertRole;
+    cardCarlos.querySelector('div').innerText = expertAvatar;
   } else {
-    document.getElementById('context-subtitle').innerText = 'Group Dynamics';
-    document.getElementById('context-title').innerText = 'Case: Black Friday Production Outage & Failover';
+    document.getElementById('context-subtitle').innerText = `Group Dynamics • ${domainName}`;
+    document.getElementById('context-title').innerText = `Case: Critical Crisis & Cross-Team Strategy Alignment`;
     
     document.getElementById('card-sofia').classList.remove('hidden');
     document.getElementById('card-beatriz').classList.remove('hidden');
     
     const cardCarlos = document.getElementById('card-carlos');
-    cardCarlos.querySelector('h4').innerText = 'Carlos Mendes';
-    cardCarlos.querySelector('span').innerText = 'Skeptical / Tech Lead';
+    cardCarlos.querySelector('h4').innerText = expertName;
+    cardCarlos.querySelector('span').innerText = expertRole;
+    cardCarlos.querySelector('div').innerText = expertAvatar;
   }
 }
 

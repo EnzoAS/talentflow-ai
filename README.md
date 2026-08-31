@@ -6,23 +6,27 @@
 ---
 
 ## 📌 Executive Summary
-**TalentFlow AI** is a next-generation career preparation platform powered by **Gemini 3.5 Flash** and Google Cloud. Instead of conventional single-turn conversational chatbots, TalentFlow AI introduces an **autonomous multi-agent system** that simulates real-world high-stakes technical interviews and group dynamics.
+**TalentFlow AI** is a next-generation career acceleration platform powered by **Gemini 3.5 Flash** and Google Cloud. Instead of conventional single-turn conversational chatbots or hardcoded engineering mockups, TalentFlow AI introduces an **autonomous multi-agent system** that dynamically adapts to **any career domain** (Software Engineering, Performance Marketing, Corporate Finance, Product Design, B2B Sales, and more).
 
-The platform analyzes a candidate's resume against targeted job descriptions, detects critical skill gaps, and dynamically orchestrates specialized AI recruiters (HR Facilitator & Technical Lead) who challenge the candidate in real-time. Upon completion, an **Evaluator Agent** performs an in-depth behavioral analysis and produces an **Executive Scorecard** featuring an interactive **Radar Chart** and personalized feedback across core competencies.
+The platform analyzes a candidate's resume against any target job description, detects critical domain skill gaps, and dynamically orchestrates specialized AI recruiters (HR Facilitator & Domain Expert Leads) who challenge the candidate in real time. Upon completion, an **Evaluator Agent** performs an in-depth behavioral analysis and produces an **Executive Scorecard** featuring an interactive **Radar Chart** and personalized feedback across core competencies.
 
 ---
 
 ## 🌟 Key Features & Agentic Behavior
 
-### 1. ATS Ingestion & Gap Detection Tool
-- Parses candidates' CVs and cross-references them with specific job descriptions.
-- Employs structured tool output (`extract_cv_gaps`) to isolate missing keywords and define strategic focus areas for interviewers.
+### 1. Domain-Adaptive ATS Tool & Playbook Generator
+- Parses candidates' CVs and cross-references them with specific job descriptions across **any industry**.
+- Employs structured tool output (`extract_cv_gaps`) to detect domain-specific requirements (e.g. ROAS/CAC in Marketing, PostgreSQL/Redis in Tech, EBITDA/Valuation in Finance) and compiles an **Adaptive Interview Playbook**.
 
-### 2. Autonomous Supervisor / Orchestration Pattern
-- Rather than static prompts, an invisible **Supervisor Agent** inspects candidate arguments in real-time.
-- Autonomously routes turns to specialized agents:
-  - **Sofia Valente (HR Facilitator):** Focuses on leadership, communication, and team mediation.
-  - **Carlos Mendes (Senior Tech Lead):** Skeptical interviewer challenging architecture decisions, scalability, and technical compromises.
+### 2. Dynamic Multi-Agent Persona Morphing
+- Rather than static prompts, an invisible **Supervisor Agent** inspects candidate arguments in real time.
+- Autonomously morphs and routes turns to specialized agent personas:
+  - **Sofia Valente (HR Facilitator):** Focuses on leadership, communication, culture fit, and team mediation.
+  - **Domain Specialist Lead (Dynamic Persona):** 
+    - *Tech:* Carlos Mendes (Senior Tech Lead)
+    - *Marketing:* Marcus Vance (Head of Growth & Performance Marketing)
+    - *Finance:* Robert Sterling (Chief Financial Officer)
+    - *Design:* Elena Rostova (Head of Product Design)
 
 ### 3. Real-Time Dynamic Evaluation Engine
 - The **Evaluator Agent** analyzes the entire session transcript.

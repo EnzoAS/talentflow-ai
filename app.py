@@ -40,23 +40,30 @@ class SimulationTurnRequest(BaseModel):
 
 def extract_cv_gaps(cv: str, job: str) -> dict:
     """
-    Analyzes the CV against the Job Description, detects gaps, and generates an Interview Playbook.
-    This playbook contains the exact multi-agent questioning strategy so raw CV text doesn't need to be resent every turn.
+    Analyzes the CV against the Job Description, autonomously identifies the career domain (Tech, Marketing, Finance, Sales, Design, Operations, etc.),
+    detects skill gaps, and generates an Adaptive Interview Playbook with specialized interviewer personas.
     """
     prompt = f"""
-    You are an Expert ATS Evaluator & Interview Strategist.
+    You are an Expert ATS Evaluator & Multi-Domain Interview Strategist.
     CV: {cv}
     Job Description: {job}
     
-    Analyze the match, find critical gaps, and generate an Interview Playbook for Sofia (HR) and Carlos (Tech Lead).
+    Task:
+    1. Identify the domain of the job (e.g. "Software Engineering", "Performance Marketing", "Corporate Finance", "Product Design", "B2B Sales", etc.).
+    2. Define a specialized Technical / Domain Interviewer Persona (e.g. for Marketing: "Marcus Vance" / "Head of Growth & Performance"; for Finance: "Robert Sterling" / "Chief Financial Officer"; for Tech: "Carlos Mendes" / "Senior Tech Lead").
+    3. Generate a structured Interview Playbook for Sofia (HR / Culture Facilitator) and the domain specialist.
     
     Return ONLY valid JSON with keys:
     - 'match_score': int (0-100)
-    - 'summary': short string explaining the score
-    - 'present_keywords': list of strings
-    - 'missing_keywords': list of strings
-    - 'simulation_focus': str instructions
-    - 'interview_playbook': list of 3-4 structured challenge questions (e.g. ['Carlos challenges on DB scalability', 'Sofia evaluates crisis leadership'])
+    - 'domain': string (e.g. "Growth Marketing", "Fullstack Engineering", "Financial Planning")
+    - 'interviewer_name': string (Domain expert name)
+    - 'interviewer_role': string (Domain expert title)
+    - 'interviewer_avatar': string (Emoji avatar, e.g. "📈", "👨‍💻", "📊", "🎨", "💼")
+    - 'summary': short string explaining candidate fit and domain gaps
+    - 'present_keywords': list of confirmed skills
+    - 'missing_keywords': list of missing requirements
+    - 'simulation_focus': str instructions for the live interview
+    - 'interview_playbook': list of 3-4 structured challenge prompts customized for this domain
     """
     resp = client.models.generate_content(
         model=MODEL_ID,
@@ -67,15 +74,19 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
         return json.loads(resp.text)
     except:
         return {
-            "match_score": 85, 
-            "summary": "Match competitivo encontrado.",
-            "present_keywords": ["Liderança", "Software"],
-            "missing_keywords": ["Cloud Architecture"],
-            "simulation_focus": "O candidato focou em Frontend. Pressione sobre falhas de backend.",
+            "match_score": 85,
+            "domain": "Software Engineering",
+            "interviewer_name": "Carlos Mendes",
+            "interviewer_role": "Senior Tech Lead",
+            "interviewer_avatar": "👨‍💻",
+            "summary": "Competitive alignment found with key domain gaps to defend.",
+            "present_keywords": ["Core Competencies", "Domain Skills"],
+            "missing_keywords": ["Advanced Architecture / KPIs"],
+            "simulation_focus": "Challenge candidate on edge cases, KPI defense, and leadership trade-offs.",
             "interview_playbook": [
-                "Carlos: Perguntar sobre resiliência e failover em produção",
-                "Sofia: Perguntar como lida com discordâncias no time",
-                "Carlos: Questionar gaps em arquitetura de dados"
+                "Interviewer challenges candidate on crisis handling and metric drop",
+                "Sofia evaluates communication and conflict management under pressure",
+                "Interviewer challenges strategic methodology and architecture trade-offs"
             ]
         }
 
@@ -84,7 +95,7 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
 @app.post("/api/analyze-cv")
 def analyze_cv_endpoint(req: AnalyzeRequest):
     """
-    Endpoint that triggers the ATS Agent tool and builds the interview playbook.
+    Endpoint that triggers the ATS Agent tool and builds the domain-adaptive interview playbook.
     """
     result = extract_cv_gaps(req.cv_text, req.job_text)
     return result
@@ -93,32 +104,39 @@ def analyze_cv_endpoint(req: AnalyzeRequest):
 def simulation_turn_endpoint(req: SimulationTurnRequest):
     """
     The Orchestrator pattern: 
-    Follows the Interview Playbook and candidate responses in English.
+    Follows the Interview Playbook and candidate responses in English, dynamically morphing
+    between Sofia (HR) and the Domain Specialist (Marketing, Tech, Finance, etc.).
     """
-    playbook = req.context.get('interview_playbook', [])
+    context = req.context or {}
+    playbook = context.get('interview_playbook', [])
     playbook_str = "\n".join([f"- {p}" for p in playbook]) if isinstance(playbook, list) else str(playbook)
+    
+    interviewer_name = context.get('interviewer_name', 'Carlos Mendes')
+    interviewer_role = context.get('interviewer_role', 'Domain Lead')
+    interviewer_avatar = context.get('interviewer_avatar', '👨‍💼')
+    domain = context.get('domain', 'General Industry')
 
     sys_prompt = f"""
-    You are the Supervisor Agent leading the interview simulation ({req.mode}).
+    You are the Supervisor Agent leading the interview simulation ({req.mode}) for the domain: {domain}.
     
     STRATEGIC INTERVIEW PLAYBOOK:
-    {playbook_str if playbook_str else req.context.get('simulation_focus', '')}
+    {playbook_str if playbook_str else context.get('simulation_focus', '')}
     
-    Agents:
-    - Carlos (speaker_id: carlos): Skeptical Tech Lead. Focuses on code, data pipelines, scalability, and architecture.
-    - Sofia (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, culture fit, and conflict mediation.
+    Active Agents in this Panel:
+    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Deeply challenges domain metrics, execution, case studies, and trade-offs.
+    - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, team dynamics, and conflict resolution.
     
     Candidate's last response: "{req.user_message}"
     
-    Task: Choose the most appropriate agent and generate a sharp, professional follow-up question or challenge in English (max 2 short sentences).
+    Task: Choose the most appropriate agent ({interviewer_name} or Sofia) and generate a sharp, realistic follow-up challenge in English (max 2 short sentences).
     
     Return ONLY valid JSON:
     {{
-        "speaker_id": "carlos" or "sofia",
-        "speaker_name": "Carlos Mendes" or "Sofia Valente",
-        "role": "Tech Lead" or "HR Facilitator",
-        "avatar": "👨‍💻" or "👩‍💼",
-        "text": "Interviewer speech in English. Direct, max 2 sentences."
+        "speaker_id": "expert" or "sofia",
+        "speaker_name": "{interviewer_name}" or "Sofia Valente",
+        "role": "{interviewer_role}" or "HR Facilitator",
+        "avatar": "{interviewer_avatar}" or "👩‍💼",
+        "text": "Interviewer speech in English. Direct, realistic, max 2 sentences."
     }}
     """
     
@@ -134,11 +152,11 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
         return bot_reply
     except:
         return {
-            "speaker_id": "carlos",
-            "speaker_name": "Carlos Mendes",
-            "role": "Tech Lead",
-            "avatar": "👨‍💻",
-            "text": "Interesting, but how would your architecture handle sudden failover if the primary database drops during peak traffic?",
+            "speaker_id": "expert",
+            "speaker_name": interviewer_name,
+            "role": interviewer_role,
+            "avatar": interviewer_avatar,
+            "text": f"Interesting perspective, but how would you defend this strategy if your core metrics drop during peak campaign demand?",
             "tokens_estimated": 20
         }
 
