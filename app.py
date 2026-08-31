@@ -18,9 +18,12 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 def serve_index():
     return FileResponse(INDEX_PATH)
 
-# Initialize Gemini Client (reads GEMINI_API_KEY from environment or defaults safely)
+from dotenv import load_dotenv
+load_dotenv()
+
+# Initialize Gemini Client (reads GEMINI_API_KEY from environment / .env)
 api_key = os.environ.get("GEMINI_API_KEY", "")
-client = genai.Client(api_key=api_key) if api_key else genai.Client()
+client = genai.Client(api_key=api_key) if api_key else genai.Client(api_key="none")
 MODEL_ID = "gemini-3.5-flash"
 
 # --- Models ---

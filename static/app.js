@@ -750,34 +750,52 @@ function selectJob(idx) {
     const el = document.getElementById(`job-card-${i}`);
     if (el) {
       if (i === idx) {
-        el.className = 'card-frame p-4 cursor-pointer border-slate-900 bg-slate-50 transition';
+        el.className = 'bg-white border-2 border-slate-900 rounded-2xl p-5 cursor-pointer shadow-md relative overflow-hidden transition-all scale-[1.01]';
       } else {
-        el.className = 'card-frame p-4 cursor-pointer hover:border-slate-300 transition bg-white';
+        el.className = 'bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-5 cursor-pointer hover:shadow-sm transition-all';
       }
     }
   });
 
-  document.getElementById('detail-job-company').innerText = job.company;
-  document.getElementById('detail-job-title').innerText = job.title;
-  document.getElementById('detail-job-salary').innerText = job.salary;
-  document.getElementById('detail-job-desc').innerText = job.desc;
+  const compEl = document.getElementById('detail-job-company');
+  if (compEl) compEl.innerText = job.company;
+  
+  const titleEl = document.getElementById('detail-job-title');
+  if (titleEl) titleEl.innerText = job.title;
+  
+  const salEl = document.getElementById('detail-job-salary');
+  if (salEl) salEl.innerText = job.salary;
+  
+  const descEl = document.getElementById('detail-job-desc');
+  if (descEl) descEl.innerText = job.desc;
 
-  document.getElementById('detail-job-tags').innerHTML = job.tags.map(t => 
-    `<span class="micro-label bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">${t}</span>`
-  ).join('');
+  const tagsEl = document.getElementById('detail-job-tags');
+  if (tagsEl) {
+    tagsEl.innerHTML = job.tags.map(t => 
+      `<span class="text-xs font-semibold bg-slate-100 px-3 py-1.5 rounded-lg text-slate-700 border border-slate-200">${t}</span>`
+    ).join('');
+  }
 }
 
 function switchMatchView(view) {
+  const candView = document.getElementById('match-candidate-view');
+  const recView = document.getElementById('match-recruiter-view');
+  const btnCand = document.getElementById('view-mode-candidate');
+  const btnRec = document.getElementById('view-mode-recruiter');
+
   if (view === 'candidate') {
-    document.getElementById('match-candidate-view').classList.remove('hidden');
-    document.getElementById('match-recruiter-view').classList.add('hidden');
-    document.getElementById('view-mode-candidate').className = 'px-3 py-1 rounded bg-white text-slate-900 font-medium text-xs shadow-sm';
-    document.getElementById('view-mode-recruiter').className = 'px-3 py-1 rounded text-slate-600 hover:text-slate-900 font-medium text-xs';
+    if (candView) candView.classList.remove('hidden');
+    if (recView) recView.classList.add('hidden');
+    if (btnCand) btnCand.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg bg-white text-slate-900 font-bold shadow-sm transition text-xs';
+    if (btnRec) btnRec.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg text-slate-500 hover:text-slate-900 font-medium transition text-xs';
   } else {
-    document.getElementById('match-candidate-view').classList.add('hidden');
-    document.getElementById('match-recruiter-view').classList.remove('hidden');
-    document.getElementById('view-mode-candidate').className = 'px-3 py-1 rounded text-slate-600 hover:text-slate-900 font-medium text-xs';
-    document.getElementById('view-mode-recruiter').className = 'px-3 py-1 rounded bg-white text-slate-900 font-medium text-xs shadow-sm';
+    if (candView) candView.classList.add('hidden');
+    if (recView) {
+      recView.classList.remove('hidden');
+      recView.classList.add('flex');
+    }
+    if (btnCand) btnCand.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg text-slate-500 hover:text-slate-900 font-medium transition text-xs';
+    if (btnRec) btnRec.className = 'flex-1 sm:flex-none px-4 py-2 rounded-lg bg-white text-slate-900 font-bold shadow-sm transition text-xs';
   }
 }
 
