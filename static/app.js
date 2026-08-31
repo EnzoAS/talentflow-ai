@@ -507,23 +507,51 @@ function toggleMicrophone() {
     state.recognition = new SpeechRecognition();
     state.recognition.lang = 'en-US';
     state.recognition.continuous = false;
-    state.recognition.interimResults = false;
+    state.recognition.interimResults = true; // Real-time live captioning stream
+
+    let finalTranscript = '';
 
     state.recognition.onstart = () => {
       state.isMicActive = true;
-      document.getElementById('btn-mic').className = 'px-3.5 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium transition flex items-center gap-1.5 animate-pulse shadow-sm';
+      finalTranscript = '';
+      document.getElementById('btn-mic').className = 'px-4 py-2.5 rounded-xl bg-red-600 text-white text-[13px] font-medium transition flex items-center gap-2 animate-pulse shadow-sm';
       document.getElementById('mic-icon').innerText = '🔴';
       document.getElementById('mic-text').innerText = 'Listening...';
+      
+      setSpeakingState('user');
+      document.getElementById('caption-speaker').innerText = 'You (Candidate)';
+      document.getElementById('caption-text').innerText = 'Listening to your microphone...';
     };
 
     state.recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      document.getElementById('user-text-input').value = transcript;
-      sendUserMessage();
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      // Live subtitle preview as user speaks
+      document.getElementById('caption-text').innerText = `"${finalTranscript || interim}"`;
     };
 
-    state.recognition.onerror = () => stopMic();
-    state.recognition.onend = () => stopMic();
+    state.recognition.onend = () => {
+      stopMic();
+      if (finalTranscript.trim()) {
+        document.getElementById('user-text-input').value = finalTranscript.trim();
+        sendUserMessage();
+      } else {
+        setSpeakingState(null);
+        document.getElementById('caption-speaker').innerText = 'Your Turn to Speak';
+        document.getElementById('caption-text').innerText = 'Click Microphone or Type to answer.';
+      }
+    };
+
+    state.recognition.onerror = (e) => {
+      console.warn("Speech error:", e);
+      stopMic();
+    };
 
     state.recognition.start();
   } else {
@@ -534,9 +562,12 @@ function toggleMicrophone() {
 function stopMic() {
   state.isMicActive = false;
   if (state.recognition) state.recognition.stop();
-  document.getElementById('btn-mic').className = 'px-3.5 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-medium hover:bg-slate-800 transition flex items-center gap-1.5 shadow-sm';
-  document.getElementById('mic-icon').innerText = '🎙️';
-  document.getElementById('mic-text').innerText = 'Microphone';
+  const micBtn = document.getElementById('btn-mic');
+  if (micBtn) {
+    micBtn.className = 'px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[13px] font-medium transition flex items-center gap-2 border border-slate-200 dark:border-slate-700';
+    document.getElementById('mic-icon').innerText = '🎙️';
+    document.getElementById('mic-text').innerText = 'Microphone';
+  }
 }
 
 async function finishSimulationAndGenerateReport() {
