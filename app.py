@@ -150,12 +150,12 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     history_lines = "\n".join([f"{m.get('name', 'Speaker')}: {m.get('text', '')}" for m in recent_history])
 
     # Distinguish between First Question (Kickoff) vs Follow-up Turn
-    is_initial = not req.user_message or len(req.dialogue_history) == 0
+    is_initial = (req.user_message is None or req.user_message.strip() == '')
 
     if is_initial:
-        turn_instruction = f"""This is the very first turn of the interview. Sofia Valente or {interviewer_name} must introduce themselves briefly and ask the opening question tailored specifically to the candidate's CV and the {domain} role."""
+        turn_instruction = f"""This is the start of the interview. Sofia Valente or {interviewer_name} must introduce themselves briefly and ask the opening question tailored specifically to the candidate's CV and the {domain} role."""
     else:
-        turn_instruction = f"""Respond directly to what the candidate just said in "{req.user_message}". Challenge them with a sharp, realistic follow-up question or probe on their methodology/trade-offs in {domain} (max 2 short sentences)."""
+        turn_instruction = f"""The candidate just answered: "{req.user_message}". Acknowledge their point and challenge them with the next sharp, realistic follow-up question or trade-off in {domain} (max 2 short sentences). Do NOT re-introduce yourself."""
 
     sys_prompt = f"""
     You are the Supervisor Agent orchestrating the live interview simulation ({req.mode}) for the domain: {domain}.
