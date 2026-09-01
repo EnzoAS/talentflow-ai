@@ -164,8 +164,8 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     {playbook_str if playbook_str else context.get('simulation_focus', '')}
     
     ACTIVE PANEL MEMBERS:
-    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Challenges candidate on core domain depth, execution, and trade-offs in {domain}.
-    - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, team dynamics, and conflict mediation.
+    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Challenges candidate on domain depth and trade-offs in {domain}.
+    - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, and conflict mediation.
     
     RECENT CONVERSATION HISTORY:
     {history_lines if history_lines else "Interview starting now."}
@@ -174,6 +174,10 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     
     Task:
     {turn_instruction}
+    
+    Return ONLY a valid JSON object with keys "speaker_id", "speaker_name", "role", "avatar", "text".
+    Example:
+    {{"speaker_id": "expert", "speaker_name": "{interviewer_name}", "role": "{interviewer_role}", "avatar": "{interviewer_avatar}", "text": "Your follow-up question here."}}
     """
     
     try:
@@ -182,29 +186,31 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
             contents=sys_prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                max_output_tokens=500,
+                max_output_tokens=600,
                 temperature=0.7
             )
         )
         
-        # Safe JSON parse with markdown cleaning if needed
-        clean_text = resp.text.strip()
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:-3].strip()
-        elif clean_text.startswith("```"):
-            clean_text = clean_text[3:-3].strip()
+        raw = resp.text.strip()
+        # Find JSON boundaries
+        import re
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if match:
+            raw = match.group(0)
 
-        bot_reply = json.loads(clean_text)
+        bot_reply = json.loads(raw)
         bot_reply["tokens_estimated"] = len(bot_reply.get("text", "").split()) * 2
         return bot_reply
     except Exception as e:
         print("SIMULATION TURN ERROR:", e)
+        # Dynamic fallback acknowledging candidate's response
+        candidate_thought = req.user_message if req.user_message else "your background"
         return {
             "speaker_id": "expert",
             "speaker_name": interviewer_name,
             "role": interviewer_role,
             "avatar": interviewer_avatar,
-            "text": f"Understood. Moving from front-end into backend is common, but how do you plan to handle database design, concurrency, and API latency under scale?",
+            "text": f"Fair enough. Taking '{candidate_thought}' into account, how would you approach collaborating with the team to overcome that gap in production?",
             "tokens_estimated": 25
         }
 
