@@ -174,6 +174,7 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     
     Task:
     {turn_instruction}
+    """
     
     try:
         resp = client.models.generate_content(
