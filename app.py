@@ -175,30 +175,19 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
     Task:
     {turn_instruction}
     
-    Return ONLY a valid JSON object with keys "speaker_id", "speaker_name", "role", "avatar", "text".
-    Example:
-    {{"speaker_id": "expert", "speaker_name": "{interviewer_name}", "role": "{interviewer_role}", "avatar": "{interviewer_avatar}", "text": "Your follow-up question here."}}
-    """
-    
     try:
         resp = client.models.generate_content(
             model=MODEL_ID,
             contents=sys_prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
+                response_schema=SimulationBotTurnResponse,
                 max_output_tokens=600,
                 temperature=0.7
             )
         )
         
-        raw = resp.text.strip()
-        # Find JSON boundaries
-        import re
-        match = re.search(r'\{.*\}', raw, re.DOTALL)
-        if match:
-            raw = match.group(0)
-
-        bot_reply = json.loads(raw)
+        bot_reply = json.loads(resp.text)
         bot_reply["tokens_estimated"] = len(bot_reply.get("text", "").split()) * 2
         return bot_reply
     except Exception as e:
