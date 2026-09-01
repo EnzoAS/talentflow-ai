@@ -182,22 +182,30 @@ def simulation_turn_endpoint(req: SimulationTurnRequest):
             contents=sys_prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_schema=SimulationBotTurnResponse,
-                max_output_tokens=150,
+                max_output_tokens=500,
                 temperature=0.7
             )
         )
-        bot_reply = json.loads(resp.text)
-        bot_reply["tokens_estimated"] = len(bot_reply["text"].split()) * 2
+        
+        # Safe JSON parse with markdown cleaning if needed
+        clean_text = resp.text.strip()
+        if clean_text.startswith("```json"):
+            clean_text = clean_text[7:-3].strip()
+        elif clean_text.startswith("```"):
+            clean_text = clean_text[3:-3].strip()
+
+        bot_reply = json.loads(clean_text)
+        bot_reply["tokens_estimated"] = len(bot_reply.get("text", "").split()) * 2
         return bot_reply
     except Exception as e:
+        print("SIMULATION TURN ERROR:", e)
         return {
             "speaker_id": "expert",
             "speaker_name": interviewer_name,
             "role": interviewer_role,
             "avatar": interviewer_avatar,
-            "text": f"Welcome to the round. Could you briefly introduce your background and the most impactful challenge you solved in your recent experience?",
-            "tokens_estimated": 20
+            "text": f"Understood. Moving from front-end into backend is common, but how do you plan to handle database design, concurrency, and API latency under scale?",
+            "tokens_estimated": 25
         }
 
 from fastapi.responses import FileResponse, Response
