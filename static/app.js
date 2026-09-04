@@ -56,23 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupKeyboardShortcuts();
   switchStage('landing');
   updateLanguageUI();
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.getVoices();
-    window.speechSynthesis.onvoiceschanged = () => {
-      // Pre-select and lock the single interviewer voice if simulation has not started
-      if (!state.isRunning && state.dialogueHistory.length === 0) {
-        lockedInterviewerVoice = null;
-        getLockedInterviewerVoice();
-      }
-    };
-  }
 });
 
 function toggleSimulationLanguage() {
   state.language = (state.language === 'en-US') ? 'pt-BR' : 'en-US';
-  lockedInterviewerVoice = null;
-  lockedInterviewerLang = null;
-  getLockedInterviewerVoice();
   updateLanguageUI();
 
   // If mic is currently running, restart with the new language model
@@ -114,7 +101,10 @@ function setupKeyboardShortcuts() {
 
 function switchStage(stage) {
   state.currentStage = stage;
-  window.speechSynthesis.cancel();
+  if (currentAudioPlayer) {
+    currentAudioPlayer.pause();
+    currentAudioPlayer.currentTime = 0;
+  }
   setSpeakingState(null);
   stopMic();
 
@@ -454,7 +444,10 @@ function toggleSimulation() {
   } else {
     btn.innerHTML = '<span>▶</span> <span>Resume</span>';
     btn.className = 'px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[13px] font-medium transition shadow-md flex items-center gap-2';
-    window.speechSynthesis.cancel();
+    if (currentAudioPlayer) {
+      currentAudioPlayer.pause();
+      currentAudioPlayer.currentTime = 0;
+    }
     setSpeakingState(null);
   }
 }
@@ -497,129 +490,22 @@ function toggleTranscriptDrawer() {
 }
 
 let currentAudioPlayer = null;
-let lockedInterviewerVoice = null;
-let lockedInterviewerLang = null;
 
-function getLockedInterviewerVoice() {
-  const currentLang = state.language || 'en-US';
-
-  // If already locked for this language and valid, strictly reuse the exact same voice
-  if (lockedInterviewerVoice && lockedInterviewerLang === currentLang) {
-    return lockedInterviewerVoice;
-  }
-
-  if (!('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  if (!voices || voices.length === 0) return null;
-
-  const isEn = (currentLang === 'en-US');
-  const langPrefix = isEn ? 'en' : 'pt';
-  const matchingVoices = voices.filter(v => v.lang.replace('_', '-').toLowerCase().startsWith(langPrefix));
-
-  if (matchingVoices.length === 0) {
-    lockedInterviewerVoice = voices[0];
-    lockedInterviewerLang = currentLang;
-    return lockedInterviewerVoice;
-  }
-
-  let selectedVoice = null;
-
-  if (isEn) {
-    // Lock onto ONE consistent male voice for Carlos Mendes in English
-    // Priority: Guy -> Christopher -> Andrew -> Brian -> David -> Mark -> George -> any male
-    const preferredMaleNames = ['guy', 'christopher', 'andrew', 'brian', 'david', 'mark', 'george', 'ryan'];
-    for (const name of preferredMaleNames) {
-      selectedVoice = matchingVoices.find(v => v.name.toLowerCase().includes(name));
-      if (selectedVoice) break;
-    }
-
-    // If preferred male name not explicitly found, filter out explicitly female voices
-    if (!selectedVoice) {
-      selectedVoice = matchingVoices.find(v => {
-        const n = v.name.toLowerCase();
-        return !n.includes('female') && !n.includes('zira') && !n.includes('jenny') && !n.includes('aria') && !n.includes('susan') && !n.includes('hazel') && !n.includes('linda');
-      });
-    }
-  } else {
-    // Lock onto ONE consistent male voice in Portuguese
-    const preferredPtNames = ['antonio', 'daniel', 'fabio', 'julio'];
-    for (const name of preferredPtNames) {
-      selectedVoice = matchingVoices.find(v => v.name.toLowerCase().includes(name));
-      if (selectedVoice) break;
-    }
-  }
-
-  if (!selectedVoice) {
-    selectedVoice = matchingVoices[0];
-  }
-
-  lockedInterviewerVoice = selectedVoice;
-  lockedInterviewerLang = currentLang;
-  console.log(`[TTS Voice Locked] Single interviewer voice locked to: "${selectedVoice.name}" (${selectedVoice.lang})`);
-  return lockedInterviewerVoice;
-}
-
-function speakText(text, persona, callback) {
+async function speakText(text, persona, callback) {
   const audioEnabled = document.getElementById('toggle-audio-synthesis')?.checked;
   if (!audioEnabled) {
-    if (callback) setTimeout(callback, 800);
+    if (callback) setTimeout(callback, 600);
     return;
   }
 
-  const currentLang = state.language || 'en-US';
-
-  // 1. Prioritize browser-native SpeechSynthesis for INSTANT (0ms) zero-latency playback with ONE locked voice
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    
-    if (currentAudioPlayer) {
-      currentAudioPlayer.pause();
-      currentAudioPlayer.currentTime = 0;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = currentLang;
-    utterance.rate = 1.02;
-    utterance.pitch = 1.0;
-
-    // Strictly enforce the single locked voice
-    const lockedVoice = getLockedInterviewerVoice();
-    if (lockedVoice) {
-      utterance.voice = lockedVoice;
-      utterance.lang = lockedVoice.lang;
-    }
-
-    utterance.onstart = () => {
-      setSpeakingState(persona);
-    };
-
-    utterance.onend = () => {
-      setSpeakingState(null);
-      if (callback) callback();
-    };
-
-    utterance.onerror = (e) => {
-      console.warn("SpeechSynthesis error:", e);
-      setSpeakingState(null);
-      if (callback) callback();
-    };
-
-    window.speechSynthesis.speak(utterance);
-    return;
-  }
-
-  // 2. Fallback to /api/tts only if browser has no speechSynthesis
-  fallbackFetchTTS(text, persona, currentLang, callback);
-}
-
-async function fallbackFetchTTS(text, persona, lang, callback) {
+  // Stop any previous audio
   if (currentAudioPlayer) {
     currentAudioPlayer.pause();
     currentAudioPlayer.currentTime = 0;
   }
 
   try {
-    const currentLang = lang || state.language || 'en-US';
+    const currentLang = state.language || 'en-US';
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -636,20 +522,24 @@ async function fallbackFetchTTS(text, persona, lang, callback) {
       };
       currentAudioPlayer.onended = () => {
         setSpeakingState(null);
+        URL.revokeObjectURL(audioUrl);
         if (callback) callback();
       };
-      currentAudioPlayer.onerror = () => {
+      currentAudioPlayer.onerror = (err) => {
+        console.warn("Audio playback error:", err);
         setSpeakingState(null);
+        URL.revokeObjectURL(audioUrl);
         if (callback) callback();
       };
 
-      currentAudioPlayer.play();
+      await currentAudioPlayer.play();
     } else {
-      if (callback) setTimeout(callback, 1000);
+      if (callback) setTimeout(callback, 800);
     }
   } catch (err) {
-    console.error("Erro no TTS Neural fallback:", err);
-    if (callback) setTimeout(callback, 1000);
+    console.error("Erro no TTS Neural:", err);
+    setSpeakingState(null);
+    if (callback) setTimeout(callback, 800);
   }
 }
 
