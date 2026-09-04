@@ -18,20 +18,18 @@ The platform analyzes a candidate's resume against any target job description, d
 - Parses candidates' CVs and cross-references them with specific job descriptions across **any industry**.
 - Employs structured tool output (`extract_cv_gaps`) to detect domain-specific requirements (e.g. ROAS/CAC in Marketing, PostgreSQL/Redis in Tech, EBITDA/Valuation in Finance) and compiles an **Adaptive Interview Playbook**.
 
-### 2. Dynamic Multi-Agent Persona Morphing
-- Rather than static prompts, an invisible **Supervisor Agent** inspects candidate arguments in real time.
-- Autonomously morphs and routes turns to specialized agent personas:
-  - **Sofia Valente (HR Facilitator):** Focuses on leadership, communication, culture fit, and team mediation.
-  - **Domain Specialist Lead (Dynamic Persona):** 
-    - *Tech:* Carlos Mendes (Senior Tech Lead)
-    - *Marketing:* Marcus Vance (Head of Growth & Performance Marketing)
-    - *Finance:* Robert Sterling (Chief Financial Officer)
-    - *Design:* Elena Rostova (Head of Product Design)
+### 2. Adaptive 1:1 Domain Specialist Interviewer
+- Rather than static prompts, an invisible **Supervisor Agent** inspects candidate arguments and domain depth in real time.
+- Autonomously adopts specialized lead interviewer personas adapted to the target position:
+  - *Tech:* Carlos Mendes (Senior Tech Lead)
+  - *Marketing:* Marcus Vance (Head of Growth & Performance Marketing)
+  - *Finance:* Robert Sterling (Chief Financial Officer)
+  - *Design:* Elena Rostova (Head of Product Design)
 
 ### 3. Real-Time Dynamic Evaluation Engine
 - The **Evaluator Agent** analyzes the entire session transcript.
 - Generates structured JSON metrics (0.0 to 10.0) for:
-  - Leadership & Conflict Mediation
+  - Leadership & Mediation
   - Assertive Communication (STAR Method)
   - CV Gap Defense
   - Time & Focus Management
@@ -59,11 +57,11 @@ The platform analyzes a candidate's resume against any target job description, d
                       |   Google Cloud Run (FastAPI Backend)  |
                       |                                       |
                       |   [Supervisor / Orchestrator Agent]   |
-                      |      |              |             |   |
-                      |      v              v             v   |
-                      |  [ATS Tool]   [Sofia (HR)]  [Carlos]  |
-                      |      |                            |   |
-                      |      +------------+---------------+   |
+                      |      |                          |     |
+                      |      v                          v     |
+                      |  [ATS Tool]         [Carlos Mendes]   |
+                      |      |                          |     |
+                      |      +------------+-------------+     |
                       |                   |                   |
                       |                   v                   |
                       |       [Evaluator Agent (Scorecard)]   |
@@ -88,21 +86,21 @@ To thoroughly test and verify all agentic workflows, follow this step-by-step te
 2. Click **"Start Interview Simulation →"** on the landing page.
 3. Click the **"🪄 Use Sample"** button (this populates a Senior Fullstack Engineer CV and a Tech Lead Job Description).
 4. Click **"Analyze Match & Gaps"**.
-   - **Verification:** The ATS agent will execute tool calling, detect missing keywords, and automatically compile a customized **Interview Playbook**.
+   - **Verification:** The ATS agent will execute tool calling, detect missing keywords, and automatically compile a customized **1:1 Technical Interview Playbook**.
 
-### Step 2: Live Multi-Agent Simulation
-1. Click **"Start 1:1 Technical Interview"** or **"Start Group Dynamics"**.
+### Step 2: Live 1:1 Interview Simulation
+1. Click **"Start 1:1 Technical Interview"**.
 2. Click **"▶ Start"** in the Meeting Studio toolbar.
-   - **Verification:** Listen to the high-definition neural voice (powered by Edge/Cloud TTS) as *Sofia* or *Carlos* begins the interview based on the playbook.
+   - **Verification:** Listen to the high-definition neural voice (powered by Edge/Cloud TTS) as *Carlos* begins the interview based on the playbook.
 3. Click **"💬 Type"** or activate the **"🎙️ Microphone"** to submit a response (e.g., *"We used an active-passive PostgreSQL cluster with Redis caching for high availability"*).
-   - **Verification:** The **Supervisor Agent** will analyze the response and route a sharp follow-up challenge to the appropriate interviewer persona.
+   - **Verification:** The **Interviewer Agent** will analyze the response and follow up with a sharp technical question advancing the discussion.
 
 ### Step 3: Executive Scorecard & Competency Radar
 1. Click **"🔴 End Simulation"**.
    - **Verification:** The **Evaluator Agent** parses the transcript, assigns structured 0–10 scores, updates the **Chart.js Radar Chart**, and provides actionable feedback across 4 core competencies.
 
 ### Step 4: Memory & Session History
-1. Click the **"📜 6. History"** tab in the header.
+1. Click the **"📜 4. History"** tab in the header.
    - **Verification:** Confirm that the completed session, grade, executive summary, and verbatim transcript are persisted.
 
 ---

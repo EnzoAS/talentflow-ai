@@ -25,9 +25,33 @@ except ImportError:
     pass
 
 # Initialize Gemini Client (reads GEMINI_API_KEY from environment / .env)
-api_key = os.environ.get("GEMINI_API_KEY", "")
+api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("\ufeffGEMINI_API_KEY", "")
 client = genai.Client(api_key=api_key) if api_key else genai.Client(api_key="none")
-MODEL_ID = "gemini-3.5-flash"
+FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.1-pro-preview"]
+
+def generate_structured_gemini(contents, schema, temperature=0.5, max_tokens=1200):
+    """
+    Resilient caller with automatic multi-model failover for 503/429/404 errors.
+    """
+    last_err = None
+    for model in FALLBACK_MODELS:
+        try:
+            resp = client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=schema,
+                    temperature=temperature,
+                    max_output_tokens=max_tokens
+                )
+            )
+            return json.loads(resp.text)
+        except Exception as e:
+            print(f"[Gemini Failover] Model {model} failed: {e}. Trying next candidate...")
+            last_err = e
+            continue
+    raise RuntimeError(f"All Gemini models failed: {last_err}")
 
 # --- Models ---
 class AnalyzeRequest(BaseModel):
@@ -85,22 +109,13 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
     
     Task:
     1. Identify the domain of the job (e.g. "Software Engineering", "Growth Marketing", "Corporate Finance", "Product Design", "B2B Sales", etc.).
-    2. Define a specialized Technical / Domain Interviewer Persona (e.g. for Marketing: "Marcus Vance" / "Head of Growth & Performance"; for Finance: "Robert Sterling" / "Chief Financial Officer"; for Tech: "Carlos Mendes" / "Senior Tech Lead").
-    3. Generate a structured Interview Playbook for Sofia (HR / Culture Facilitator) and the domain specialist.
+    2. Define a specialized Technical / Domain Interviewer Persona (e.g. for Marketing: "Marcus Vance" / "Head of Growth & Performance"; for Finance: "Robert Sterling" / "Chief Financial Officer"; for Tech: "Carlos Mendes" / "Senior Tech Lead"). For interviewer_avatar, strictly provide a single emoji such as 👨‍💻, 👨‍💼, 👩‍💻, 👩‍💼, 👨‍🔬.
+    3. Generate a structured 1:1 Technical Interview Playbook for the domain specialist.
     """
     try:
-        resp = client.models.generate_content(
-            model=MODEL_ID,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=ATSAnalysisResponse,
-                max_output_tokens=600,
-                temperature=0.3
-            )
-        )
-        return json.loads(resp.text)
+        return generate_structured_gemini(prompt, ATSAnalysisResponse, temperature=0.3, max_tokens=1000)
     except Exception as e:
+        print("[extract_cv_gaps fallback]:", e)
         return {
             "match_score": 85,
             "domain": "Software Engineering",
@@ -112,9 +127,9 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
             "missing_keywords": ["Advanced Architecture / KPIs"],
             "simulation_focus": "Challenge candidate on edge cases, KPI defense, and leadership trade-offs.",
             "interview_playbook": [
-                "Interviewer challenges candidate on crisis handling and metric drop",
-                "Sofia evaluates communication and conflict management under pressure",
-                "Interviewer challenges strategic methodology and architecture trade-offs"
+                "Interviewer challenges candidate on crisis handling and architecture scale",
+                "Interviewer probes into edge cases, technical trade-offs, and resilience under pressure",
+                "Interviewer evaluates technical leadership and system design decisions"
             ]
         }
 
@@ -131,76 +146,91 @@ def analyze_cv_endpoint(req: AnalyzeRequest):
 @app.post("/api/simulation/turn")
 def simulation_turn_endpoint(req: SimulationTurnRequest):
     """
-    The Orchestrator pattern: 
-    Follows the Interview Playbook and candidate responses in English, dynamically morphing
-    between Sofia (HR) and the Domain Specialist (Marketing, Tech, Finance, etc.).
-    Maintains multi-turn conversational context for natural follow-ups.
+    1:1 Technical Interview Orchestrator:
+    Follows the Interview Playbook and candidate responses.
+    Exclusively focuses on 1:1 technical interview with the domain expert interviewer.
+    Maintains multi-turn conversational context and dynamically adapts to the candidate's language.
     """
     context = req.context or {}
     playbook = context.get('interview_playbook', [])
     playbook_str = "\n".join([f"- {p}" for p in playbook]) if isinstance(playbook, list) else str(playbook)
     
-    interviewer_name = context.get('interviewer_name', 'Executive Lead')
-    interviewer_role = context.get('interviewer_role', 'Domain Lead')
-    interviewer_avatar = context.get('interviewer_avatar', '👨‍💼')
-    domain = context.get('domain', 'Domain Strategy')
+    interviewer_name = context.get('interviewer_name', 'Carlos Mendes')
+    interviewer_role = context.get('interviewer_role', 'Senior Tech Lead')
+    interviewer_avatar = context.get('interviewer_avatar', '👨‍💻')
+    domain = context.get('domain', 'Software Engineering')
 
-    # Pass the last 3-4 dialogue turns so the AI has conversational memory
-    recent_history = req.dialogue_history[-4:] if req.dialogue_history else []
+    # Pass the last 6 dialogue turns so the AI has rich conversational memory
+    recent_history = req.dialogue_history[-6:] if req.dialogue_history else []
     history_lines = "\n".join([f"{m.get('name', 'Speaker')}: {m.get('text', '')}" for m in recent_history])
 
     # Distinguish between First Question (Kickoff) vs Follow-up Turn
     is_initial = (req.user_message is None or req.user_message.strip() == '')
 
+    panel_instruction = f"""
+ACTIVE INTERVIEWER:
+- {interviewer_name} (speaker_id: expert): {interviewer_role} in {domain}.
+(This is a 1-on-1 technical interview. Only {interviewer_name} conducts the interview.)
+"""
     if is_initial:
-        turn_instruction = f"""This is the start of the interview. Sofia Valente or {interviewer_name} must introduce themselves briefly and ask the opening question tailored specifically to the candidate's CV and the {domain} role."""
+        turn_instruction = f"""This is the start of the 1:1 technical interview. {interviewer_name} must introduce themselves briefly in English and ask the opening technical question based on the candidate's CV and the {domain} playbook."""
     else:
-        turn_instruction = f"""The candidate just answered: "{req.user_message}". Acknowledge their point and challenge them with the next sharp, realistic follow-up question or trade-off in {domain} (max 2 short sentences). Do NOT re-introduce yourself."""
+        turn_instruction = f"""The candidate just answered: "{req.user_message}".
+Acknowledge their answer, critically assess their reasoning or technical depth, and challenge them with the NEXT logical follow-up question or trade-off from the playbook in {domain} (1-2 sentences).
+Do NOT introduce yourself again. Advance the conversation forward with sharp, domain-specific technical follow-up questions."""
 
-    sys_prompt = f"""
-    You are the Supervisor Agent orchestrating the live interview simulation ({req.mode}) for the domain: {domain}.
-    
-    STRATEGIC PLAYBOOK:
-    {playbook_str if playbook_str else context.get('simulation_focus', '')}
-    
-    ACTIVE PANEL MEMBERS:
-    - {interviewer_name} (speaker_id: expert): {interviewer_role}. Challenges candidate on domain depth and trade-offs in {domain}.
-    - Sofia Valente (speaker_id: sofia): HR Facilitator. Focuses on leadership, communication, and conflict mediation.
-    
-    RECENT CONVERSATION HISTORY:
-    {history_lines if history_lines else "Interview starting now."}
-    
-    Candidate's newest response: "{req.user_message if req.user_message else 'Candidate joined the room.'}"
-    
-    Task:
-    {turn_instruction}
-    """
+        sys_prompt = f"""
+You are {interviewer_name}, {interviewer_role}, conducting a rigorous, authentic 1:1 technical interview in {domain}.
+
+STRATEGIC PLAYBOOK:
+{playbook_str if playbook_str else context.get('simulation_focus', '')}
+
+{panel_instruction}
+
+RECENT CONVERSATION HISTORY:
+{history_lines if history_lines else "Interview starting now."}
+
+Candidate's latest response: "{req.user_message if req.user_message else 'Candidate joined the room.'}"
+
+TASK & CRITICAL INTERVIEW RULES:
+1. NEVER repeat or quote the candidate's words verbatim back to them (NEVER say "Understood regarding '...'" or "Great point on '...'").
+2. NEVER give unearned praise or fake validation (DO NOT say "Great point", "Excellent", "Understood" if the candidate gave a circular, evasive, confused answer, or admitted they don't know).
+3. CRITICALLY ASSESS THE CANDIDATE'S ACTUAL CONTENT:
+   - If the candidate gave a vague, circular, or nonsense answer: Professionally call out the lack of depth or missed question, and challenge them to provide a concrete, real-world example.
+   - If the candidate admitted they don't know ("I have no idea", "never worked with this"): Acknowledge the honesty or knowledge gap, and pivot to foundational concepts or an adjacent technical topic.
+   - If the candidate provided a strong, structured technical answer: Challenge their design with edge cases, failure scenarios, concurrency, or scale limits.
+4. Keep your response concise, punchy, and conversational (1 to 2 sentences max). Advance the interview forward like an authentic senior tech lead.
+
+LANGUAGE INSTRUCTION:
+The primary language of this simulation is English (en-US). If the candidate speaks or writes in English, reply in natural, professional English. If the candidate explicitly speaks or writes in Portuguese, adapt and reply in Portuguese.
+"""
     
     try:
-        resp = client.models.generate_content(
-            model=MODEL_ID,
-            contents=sys_prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=SimulationBotTurnResponse,
-                max_output_tokens=600,
-                temperature=0.7
-            )
-        )
-        
-        bot_reply = json.loads(resp.text)
+        bot_reply = generate_structured_gemini(sys_prompt, SimulationBotTurnResponse, temperature=0.7, max_tokens=1000)
+        bot_reply["speaker_id"] = "expert"
+        bot_reply["speaker_name"] = interviewer_name
+        bot_reply["role"] = interviewer_role
+        bot_reply["avatar"] = interviewer_avatar
         bot_reply["tokens_estimated"] = len(bot_reply.get("text", "").split()) * 2
         return bot_reply
     except Exception as e:
-        print("SIMULATION TURN ERROR:", e)
-        # Dynamic fallback acknowledging candidate's response
-        candidate_thought = req.user_message if req.user_message else "your background"
+        print("SIMULATION TURN ALL-MODELS ERROR:", e)
+        # Dynamic progressive heuristic fallback without repeating user's words or giving fake praise
+        step = len(req.dialogue_history)
+        fallback_questions = [
+            f"Hello! I'm {interviewer_name}, {interviewer_role}. To kick off our technical interview in {domain}, could you describe the most critical architecture or scalability challenge you've led recently?",
+            "That response doesn't quite address the core challenge directly. Could you give me a specific, concrete example of how you resolved that in production?",
+            "I see. Stepping back to the architectural fundamentals, how do you handle state management, caching, and failover under high load?",
+            "Let's move to another key competency. How do you technically mediate when two senior engineers on your team disagree on a major design decision?"
+        ]
+        chosen_text = fallback_questions[min(step // 2, len(fallback_questions) - 1)]
+
         return {
             "speaker_id": "expert",
             "speaker_name": interviewer_name,
             "role": interviewer_role,
             "avatar": interviewer_avatar,
-            "text": f"Fair enough. Taking '{candidate_thought}' into account, how would you approach collaborating with the team to overcome that gap in production?",
+            "text": chosen_text,
             "tokens_estimated": 25
         }
 
@@ -211,15 +241,18 @@ import asyncio
 class TTSRequest(BaseModel):
     text: str
     speaker_id: str
+    lang: str = "en-US"
 
 @app.post("/api/tts")
 async def generate_speech_endpoint(req: TTSRequest):
     """
-    Generates high-definition neural voices for interviewers.
-    Sofia uses 'en-US-AvaNeural' (Professional & Natural HR Voice)
-    Expert uses 'en-US-AndrewNeural' (Confident & Deep Executive Voice)
+    Generates high-definition neural voices for the 1:1 interviewer.
+    Maintains a strictly consistent single male voice:
+    - Portuguese: 'pt-BR-AntonioNeural' (Deep, natural, professional executive voice)
+    - English: 'en-US-AndrewNeural' (Confident, professional executive voice)
     """
-    voice = "en-US-AvaNeural" if req.speaker_id == "sofia" else "en-US-AndrewNeural"
+    is_pt = bool(req.lang and req.lang.lower().startswith("pt"))
+    voice = "pt-BR-AntonioNeural" if is_pt else "en-US-AndrewNeural"
     
     communicate = edge_tts.Communicate(req.text, voice)
     audio_data = bytearray()
@@ -256,18 +289,9 @@ def evaluate_simulation_endpoint(req: EvaluationRequest):
     
     eval_result = {}
     try:
-        resp = client.models.generate_content(
-            model=MODEL_ID,
-            contents=eval_prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=ScorecardEvaluationResponse,
-                max_output_tokens=600,
-                temperature=0.2
-            )
-        )
-        eval_result = json.loads(resp.text)
+        eval_result = generate_structured_gemini(eval_prompt, ScorecardEvaluationResponse, temperature=0.2, max_tokens=1500)
     except Exception as e:
+        print("[evaluate_simulation fallback]:", e)
         eval_result = {
             "overall_score": 4.0,
             "summary": "Superficial responses and lack of strategic depth during the live dialogue.",
@@ -299,3 +323,8 @@ def evaluate_simulation_endpoint(req: EvaluationRequest):
 
     return eval_result
 
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)
