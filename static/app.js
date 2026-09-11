@@ -12,7 +12,7 @@ const state = {
   userId: getOrCreateUserId(),
   currentStage: 'landing',
   currentMode: 'one-on-one',
-  language: 'en-US', // Primary default language: English (US)
+  language: 'pt-BR', // Primary default language: Português (BR)
   isRunning: false,
   isMicActive: false,
   isCameraActive: false,
@@ -423,7 +423,8 @@ async function requestBotTurn(userMsg = '') {
         dialogue_history: state.dialogueHistory,
         user_message: userMsg,
         user_image: userSnapshot,
-        context: state.analysisContext
+        context: state.analysisContext,
+        language: state.language || 'pt-BR'
       })
     });
 
@@ -944,7 +945,8 @@ async function finishSimulationAndGenerateReport() {
         job_context: state.analysisContext,
         user_id: state.userId,
         had_video: sessionHadVideo,
-        video_observations: sessionVideoObs
+        video_observations: sessionVideoObs,
+        language: state.language || 'pt-BR'
       })
     });
     

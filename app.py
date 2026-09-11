@@ -66,6 +66,7 @@ class SimulationTurnRequest(BaseModel):
     user_message: str
     context: dict
     user_image: str | None = None
+    language: str | None = "pt-BR"
 
 # --- Pydantic Schemas for Gemini Structured Outputs ---
 
@@ -235,11 +236,30 @@ ACTIVE INTERVIEWER:
    - Candidate camera is currently OFF. Set 'visual_observation' to null. Focus strictly on their spoken argument.
 """
 
-    if is_initial:
-        turn_instruction = f"""This is the start of the 1:1 technical interview. {interviewer_name} must introduce themselves briefly in English and ask the opening technical question based on the candidate's CV and the {domain} playbook."""
+    is_pt = bool(req.language and ("pt" in req.language.lower() or "br" in req.language.lower()))
+
+    if is_pt:
+        lang_instruction = """
+LANGUAGE INSTRUCTION:
+The interview must be conducted 100% in natural, professional Brazilian Portuguese (pt-BR).
+Introduce yourself in Portuguese, and formulate all questions, technical follow-ups, and challenges strictly in natural Brazilian Portuguese.
+"""
+        if is_initial:
+            turn_instruction = f"""This is the start of the 1:1 technical interview. {interviewer_name} must introduce themselves briefly in natural Brazilian Portuguese and ask the opening technical question in Portuguese based on the candidate's CV and the {domain} playbook."""
+        else:
+            turn_instruction = f"""The candidate just answered: "{req.user_message}".
+Acknowledge their answer in Portuguese, critically assess their reasoning or technical depth, and challenge them with the NEXT logical follow-up question or trade-off from the playbook in {domain} (1-2 sentences in Portuguese).
+Do NOT introduce yourself again. Advance the conversation forward with sharp, domain-specific technical follow-up questions in Portuguese."""
     else:
-        turn_instruction = f"""The candidate just answered: "{req.user_message}".
-Acknowledge their answer, critically assess their reasoning or technical depth, and challenge them with the NEXT logical follow-up question or trade-off from the playbook in {domain} (1-2 sentences).
+        lang_instruction = """
+LANGUAGE INSTRUCTION:
+The primary language of this simulation is English (en-US). Formulate all questions, follow-ups, and challenges in natural, professional English.
+"""
+        if is_initial:
+            turn_instruction = f"""This is the start of the 1:1 technical interview. {interviewer_name} must introduce themselves briefly in English and ask the opening technical question based on the candidate's CV and the {domain} playbook."""
+        else:
+            turn_instruction = f"""The candidate just answered: "{req.user_message}".
+Acknowledge their answer in English, critically assess their reasoning or technical depth, and challenge them with the NEXT logical follow-up question or trade-off from the playbook in {domain} (1-2 sentences).
 Do NOT introduce yourself again. Advance the conversation forward with sharp, domain-specific technical follow-up questions."""
 
     sys_prompt = f"""
@@ -249,6 +269,9 @@ STRATEGIC PLAYBOOK:
 {playbook_str if playbook_str else context.get('simulation_focus', '')}
 
 {panel_instruction}
+
+TURN INSTRUCTION:
+{turn_instruction}
 
 RECENT CONVERSATION HISTORY:
 {history_lines if history_lines else "Interview starting now."}
@@ -265,8 +288,7 @@ TASK & CRITICAL INTERVIEW RULES:
 4. Keep your response concise, punchy, and conversational (1 to 2 sentences max). Advance the interview forward like an authentic senior tech lead.
 {visual_rules}
 
-LANGUAGE INSTRUCTION:
-The primary language of this simulation is English (en-US). If the candidate speaks or writes in English, reply in natural, professional English. If the candidate explicitly speaks or writes in Portuguese, adapt and reply in Portuguese.
+{lang_instruction}
 """
     
     try:
@@ -334,12 +356,14 @@ class EvaluationRequest(BaseModel):
     user_id: str = "anonymous_default"
     had_video: bool = False
     video_observations: list[str] = []
+    language: str | None = "pt-BR"
 
 @app.post("/api/evaluate-simulation")
 def evaluate_simulation_endpoint(req: EvaluationRequest):
     """
-    Evaluates the user's transcript and calculates realistic scores based on performance in English with structured Pydantic schema.
+    Evaluates the user's transcript and calculates realistic scores with structured Pydantic schema.
     Includes Big Tech hiring recommendation, seniority diagnostics, forensic highlights, and shadow coaching rewrites.
+    Fully supports Brazilian Portuguese (pt-BR) and English (en-US).
     """
     transcript_text = "\n".join([f"Turn {i+1} - {m.get('name', 'User')}: {m.get('text', '')}" for i, m in enumerate(req.dialogue_history)])
 
@@ -365,6 +389,22 @@ Provide 'visual_presence_score' (0.0 to 10.0) assessing their non-verbal executi
         visual_section = """
 The candidate completed this session in audio/voice-only mode (camera off). Set 'visual_presence_score' and 'visual_presence_feedback' to null.
 """
+
+    is_pt = bool(req.language and ("pt" in req.language.lower() or "br" in req.language.lower()))
+
+    if is_pt:
+        lang_section = """
+LANGUAGE & LOCALIZATION REQUIREMENT:
+All evaluation feedback, summary, skill feedback, trade-off feedback, star method feedback, signal-to-noise feedback, forensic highlight analysis, and shadow coaching rewrites & takeaways MUST be written in natural, professional Brazilian Portuguese (pt-BR).
+You may preserve standard global tech terms (e.g. 'Trade-off', 'STAR', 'Cache invalidation', 'Strong Hire', etc.).
+For market_salary_estimate, formulate in Brazilian Reais (e.g. 'R$ 15.000 - R$ 20.000 / mês' or annual equivalent).
+"""
+    else:
+        lang_section = """
+LANGUAGE & LOCALIZATION REQUIREMENT:
+All evaluation feedback, summary, and analysis must be formulated in natural, professional English (en-US).
+For market_salary_estimate, formulate in USD annual benchmark (e.g. '$140k - $175k / yr').
+"""
     
     eval_prompt = f"""
     You are an Executive Hiring Committee & Principal Technical Bar Raiser at a top tier technology firm (FAANG/Fintech).
@@ -382,7 +422,7 @@ The candidate completed this session in audio/voice-only mode (camera off). Set 
 
     2. SENIORITY LEVEL & SALARY BENCHMARK:
        - Calibrate 'seniority_level_estimated' (e.g. 'Principal / Staff Engineer (L6)', 'Senior Tech Lead (L5)', 'Mid-Level Software Engineer (L4)', 'Associate Engineer (L3)').
-       - Calibrate 'market_salary_estimate' according to the demonstrated seniority (e.g. '$140k - $175k / yr' or '$100k - $125k / yr').
+       - Calibrate 'market_salary_estimate' according to the demonstrated seniority and target market.
 
     3. ADVANCED SENIORITY DIAGNOSTICS:
        - 'trade_off_score' (0.0 to 10.0) & 'trade_off_feedback': Did they weigh trade-offs (scalability vs simplicity, consistency vs availability, latency vs cost, tech debt)?
@@ -405,56 +445,101 @@ The candidate completed this session in audio/voice-only mode (camera off). Set 
 
     {visual_section}
     
+    {lang_section}
+
     FULL TRANSCRIPT:
     {transcript_text if transcript_text.strip() else "Candidate provided no spoken input."}
     """
     
     eval_result = {}
     try:
-        eval_result = generate_structured_gemini(eval_prompt, ScorecardEvaluationResponse, temperature=0.2, max_tokens=2200)
+        eval_result = generate_structured_gemini(eval_prompt, ScorecardEvaluationResponse, temperature=0.2, max_tokens=4000)
     except Exception as e:
         print("[evaluate_simulation fallback]:", e)
-        eval_result = {
-            "overall_score": 4.0,
-            "recommendation": "Lean No Hire",
-            "seniority_level_estimated": "Mid-Level Engineer (L4)",
-            "market_salary_estimate": "$90,000 - $115,000 / yr",
-            "summary": "Candidate provided overly brief responses lacking technical trade-off depth and concrete metrics.",
-            "skills": [
-                {"name": "Leadership & Mediation", "score": 3.5, "feedback": "Failed to demonstrate proactive leadership in technical deadlock."},
-                {"name": "Assertive Communication", "score": 4.0, "feedback": "Answers lacked structured STAR methodology and real metrics."},
-                {"name": "CV Gap Defense", "score": 3.0, "feedback": "Could not justify architecture trade-offs."},
-                {"name": "Time & Focus Management", "score": 5.0, "feedback": "Brief answers without moving discussion forward."}
-            ],
-            "trade_off_score": 3.5,
-            "trade_off_feedback": "Did not explore pros and cons or scaling limits of the proposed solutions.",
-            "star_method_score": 3.0,
-            "star_method_feedback": "Lacked specific quantifiable outcomes or measurable impact.",
-            "signal_to_noise_score": 4.5,
-            "signal_to_noise_feedback": "Superficial buzzwords without concrete technical explanation.",
-            "peak_moment": {
-                "title": "Initial System Mention",
-                "turn_index": 1,
-                "quote": "Referenced FastAPI and microservices.",
-                "analysis": "Showed familiarity with the modern stack."
-            },
-            "critical_gap_moment": {
-                "title": "Unaddressed Scaling Bottlenecks",
-                "turn_index": 2,
-                "quote": "Gave brief statement without detailing Redis caching strategy.",
-                "analysis": "Missed opportunity to explain cache invalidation and connection pooling."
-            },
-            "shadow_coaching": [
-                {
+        if is_pt:
+            eval_result = {
+                "overall_score": 4.0,
+                "recommendation": "Lean No Hire",
+                "seniority_level_estimated": "Engenheiro Pleno (L4)",
+                "market_salary_estimate": "R$ 12.000 - R$ 16.000 / mês",
+                "summary": "O candidato forneceu respostas sucintas sem demonstrar profundidade em trade-offs técnicos e métricas concretas de impacto.",
+                "skills": [
+                    {"name": "Liderança & Mediação", "score": 3.5, "feedback": "Não demonstrou postura proativa na resolução de impasses técnicos."},
+                    {"name": "Comunicação Assertiva", "score": 4.0, "feedback": "Respostas sem metodologia STAR e ausência de dados mensuráveis."},
+                    {"name": "Defesa de Gaps do CV", "score": 3.0, "feedback": "Não justificou os trade-offs das decisões arquiteturais tomadas."},
+                    {"name": "Gestão de Tempo & Foco", "score": 5.0, "feedback": "Respostas breves que não moveram a discussão técnica para frente."}
+                ],
+                "trade_off_score": 3.5,
+                "trade_off_feedback": "Não analisou prós e contras ou limites de escalabilidade das soluções apresentadas.",
+                "star_method_score": 3.0,
+                "star_method_feedback": "Falta de resultados quantificáveis e impacto direto no negócio.",
+                "signal_to_noise_score": 4.5,
+                "signal_to_noise_feedback": "Termos conceituais sem detalhamento técnico concreto de implementação.",
+                "peak_moment": {
+                    "title": "Apresentação da Stack",
+                    "turn_index": 1,
+                    "quote": "Mencionou tecnologias e arquitetura base.",
+                    "analysis": "Demonstrou conhecimento do ecossistema moderno."
+                },
+                "critical_gap_moment": {
+                    "title": "Gargalo de Escala não Explorado",
                     "turn_index": 2,
-                    "user_answer": "I used Redis to make things faster.",
-                    "senior_rewrite": "We implemented an L2 distributed Redis cluster with adaptive TTL and LRU eviction, reducing Postgres p99 query latency by 65% under peak traffic.",
-                    "key_takeaway": "Always quantify the latency reduction and explain the eviction/concurrency policy."
-                }
-            ],
-            "visual_presence_score": 7.0 if req.had_video else None,
-            "visual_presence_feedback": "Maintained eye contact and engaged posture." if req.had_video else None
-        }
+                    "quote": "Resposta genérica sobre caching e banco de dados.",
+                    "analysis": "Perdeu a chance de explicar invalidação de cache, particionamento e tolerância a falhas."
+                },
+                "shadow_coaching": [
+                    {
+                        "turn_index": 2,
+                        "user_answer": "Eu usei Redis para deixar as consultas mais rápidas.",
+                        "senior_rewrite": "Implementamos um cluster Redis L2 distribuído com política LRU e TTL adaptativo, reduzindo a latência p99 do PostgreSQL em 65% sob picos de 12k req/s.",
+                        "key_takeaway": "Sempre quantifique a redução de latência e fundamente as escolhas de resiliência e concorrência."
+                    }
+                ],
+                "visual_presence_score": 7.0 if req.had_video else None,
+                "visual_presence_feedback": "Manteve contato visual e postura firme." if req.had_video else None
+            }
+        else:
+            eval_result = {
+                "overall_score": 4.0,
+                "recommendation": "Lean No Hire",
+                "seniority_level_estimated": "Mid-Level Engineer (L4)",
+                "market_salary_estimate": "$90,000 - $115,000 / yr",
+                "summary": "Candidate provided overly brief responses lacking technical trade-off depth and concrete metrics.",
+                "skills": [
+                    {"name": "Leadership & Mediation", "score": 3.5, "feedback": "Failed to demonstrate proactive leadership in technical deadlock."},
+                    {"name": "Assertive Communication", "score": 4.0, "feedback": "Answers lacked structured STAR methodology and real metrics."},
+                    {"name": "CV Gap Defense", "score": 3.0, "feedback": "Could not justify architecture trade-offs."},
+                    {"name": "Time & Focus Management", "score": 5.0, "feedback": "Brief answers without moving discussion forward."}
+                ],
+                "trade_off_score": 3.5,
+                "trade_off_feedback": "Did not explore pros and cons or scaling limits of the proposed solutions.",
+                "star_method_score": 3.0,
+                "star_method_feedback": "Lacked specific quantifiable outcomes or measurable impact.",
+                "signal_to_noise_score": 4.5,
+                "signal_to_noise_feedback": "Superficial buzzwords without concrete technical explanation.",
+                "peak_moment": {
+                    "title": "Initial System Mention",
+                    "turn_index": 1,
+                    "quote": "Referenced FastAPI and microservices.",
+                    "analysis": "Showed familiarity with the modern stack."
+                },
+                "critical_gap_moment": {
+                    "title": "Unaddressed Scaling Bottlenecks",
+                    "turn_index": 2,
+                    "quote": "Gave brief statement without detailing Redis caching strategy.",
+                    "analysis": "Missed opportunity to explain cache invalidation and connection pooling."
+                },
+                "shadow_coaching": [
+                    {
+                        "turn_index": 2,
+                        "user_answer": "I used Redis to make things faster.",
+                        "senior_rewrite": "We implemented an L2 distributed Redis cluster with adaptive TTL and LRU eviction, reducing Postgres p99 query latency by 65% under peak traffic.",
+                        "key_takeaway": "Always quantify the latency reduction and explain the eviction/concurrency policy."
+                    }
+                ],
+                "visual_presence_score": 7.0 if req.had_video else None,
+                "visual_presence_feedback": "Maintained eye contact and engaged posture." if req.had_video else None
+            }
 
     # Asynchronously persist to Google Cloud Firestore with User Partitioning
     try:
