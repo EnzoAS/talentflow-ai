@@ -582,6 +582,35 @@
           </p>
         </div>
 
+        <!-- Session Recording & Forensic Replay (Audio & Video) -->
+        <div id="session-recording-card" class="hidden p-6 rounded-3xl bg-slate-900 text-white border border-slate-800 flex flex-col gap-4 shadow-xl">
+          <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">🎬</span>
+              <div>
+                <h4 class="text-sm font-bold text-white tracking-tight" id="recording-card-title">Replay da Sua Entrevista Gravada</h4>
+                <p class="text-xs text-slate-400 mt-0.5" id="recording-card-desc">Assista ou ouça sua performance para autoavaliação forense.</p>
+              </div>
+            </div>
+            <a id="btn-download-recording" download="talentflow_interview_recording.webm" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center gap-2 border border-slate-700 cursor-pointer shadow-sm">
+              <span>📥</span> <span id="download-recording-text">Baixar Gravação (.webm)</span>
+            </a>
+          </div>
+
+          <!-- Video Player Container (visible when camera was ON) -->
+          <div id="recording-video-container" class="hidden rounded-2xl overflow-hidden bg-black aspect-video max-h-[360px] w-full border border-slate-800 flex items-center justify-center">
+            <video id="recording-video-player" controls class="w-full h-full object-contain"></video>
+          </div>
+
+          <!-- Audio Player Container (visible when audio-only) -->
+          <div id="recording-audio-container" class="hidden p-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex flex-col gap-2">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-300">
+              <span>🎙️</span> <span>Gravação de Áudio da Sessão</span>
+            </div>
+            <audio id="recording-audio-player" controls class="w-full"></audio>
+          </div>
+        </div>
+
         <div class="flex flex-col sm:flex-row gap-3 mt-4">
           <button onclick="startNewInterview()" class="flex-1 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[14px] transition shadow-md flex items-center justify-center gap-2">
             <span>🔄</span> <span id="btn-new-sim-text">Iniciar Nova Simulação</span>

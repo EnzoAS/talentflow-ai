@@ -23,6 +23,12 @@ const state = {
   timerInterval: null,
   recognition: null,
   isInputAllowed: false,
+  mediaRecorder: null,
+  recordedChunks: [],
+  sessionRecordingBlob: null,
+  sessionRecordingUrl: null,
+  recordingType: null,
+  recordingMicStream: null,
   
   totalTokens: 0,
   totalCostUSD: 0,
@@ -114,6 +120,13 @@ function updateLanguageUI() {
       cameraTextEl.innerText = isEn ? 'Camera (Off)' : 'Câmera (Desligada)';
     }
   }
+
+  const recTitle = document.getElementById('recording-card-title');
+  if (recTitle) recTitle.innerText = isEn ? 'Interview Recording & Replay' : 'Replay da Sua Entrevista Gravada';
+  const recDesc = document.getElementById('recording-card-desc');
+  if (recDesc) recDesc.innerText = isEn ? 'Watch or listen to your recorded performance for forensic self-review.' : 'Assista ou ouça sua performance para autoavaliação forense.';
+  const dlText = document.getElementById('download-recording-text');
+  if (dlText) dlText.innerText = isEn ? 'Download Recording' : 'Baixar Gravação (.webm)';
 
   setUserInputEnabled(state.isInputAllowed);
 }
@@ -242,9 +255,144 @@ function switchStage(stage) {
   } else if (stage === 'report') {
     showStage('stage-report');
     renderRadarChart();
+    displayRecordedMediaInScorecard();
   } else if (stage === 'history') {
     showStage('stage-history');
     renderHistoryUI();
+  }
+}
+
+async function startSessionRecording() {
+  stopSessionRecording();
+  state.recordedChunks = [];
+  if (state.sessionRecordingUrl) {
+    try { URL.revokeObjectURL(state.sessionRecordingUrl); } catch(e) {}
+    state.sessionRecordingUrl = null;
+  }
+
+  try {
+    let tracks = [];
+    let isVideo = false;
+
+    // 1. Get microphone audio track
+    try {
+      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      state.recordingMicStream = micStream;
+      tracks.push(...micStream.getAudioTracks());
+    } catch (e) {
+      console.warn("Could not capture mic audio for session recording:", e);
+    }
+
+    // 2. Get camera video track if camera is active
+    if (state.isCameraActive && state.cameraStream) {
+      const videoTracks = state.cameraStream.getVideoTracks();
+      if (videoTracks.length > 0) {
+        tracks.push(...videoTracks);
+        isVideo = true;
+      }
+    }
+
+    if (tracks.length === 0) return;
+
+    const stream = new MediaStream(tracks);
+    state.recordingCombinedStream = stream;
+
+    let mimeType = '';
+    if (isVideo) {
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+        mimeType = 'video/webm;codecs=vp9,opus';
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')) {
+        mimeType = 'video/webm;codecs=vp8,opus';
+      } else if (MediaRecorder.isTypeSupported('video/webm')) {
+        mimeType = 'video/webm';
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        mimeType = 'video/mp4';
+      }
+    } else {
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        mimeType = 'audio/webm;codecs=opus';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+        mimeType = 'audio/ogg';
+      }
+    }
+
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    state.mediaRecorder = recorder;
+    state.recordingType = isVideo ? 'video' : 'audio';
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) {
+        state.recordedChunks.push(e.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      if (state.recordedChunks.length > 0) {
+        const type = recorder.mimeType || (isVideo ? 'video/webm' : 'audio/webm');
+        const blob = new Blob(state.recordedChunks, { type });
+        state.sessionRecordingBlob = blob;
+        state.sessionRecordingUrl = URL.createObjectURL(blob);
+        displayRecordedMediaInScorecard();
+      }
+    };
+
+    recorder.start(1000);
+    console.log(`[MediaRecorder] Started recording ${state.recordingType} (${recorder.mimeType})`);
+  } catch (err) {
+    console.warn("[MediaRecorder] Failed to start:", err);
+  }
+}
+
+function stopSessionRecording() {
+  if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
+    try {
+      state.mediaRecorder.stop();
+    } catch (e) {}
+  }
+  if (state.recordingMicStream) {
+    state.recordingMicStream.getTracks().forEach(t => {
+      try { t.stop(); } catch(e) {}
+    });
+    state.recordingMicStream = null;
+  }
+  state.recordingCombinedStream = null;
+}
+
+function displayRecordedMediaInScorecard() {
+  const card = document.getElementById('session-recording-card');
+  if (!card || !state.sessionRecordingUrl) return;
+
+  card.classList.remove('hidden');
+
+  const videoContainer = document.getElementById('recording-video-container');
+  const videoPlayer = document.getElementById('recording-video-player');
+  const audioContainer = document.getElementById('recording-audio-container');
+  const audioPlayer = document.getElementById('recording-audio-player');
+  const downloadBtn = document.getElementById('btn-download-recording');
+
+  const isVideo = state.recordingType === 'video';
+
+  if (downloadBtn) {
+    downloadBtn.href = state.sessionRecordingUrl;
+    downloadBtn.download = isVideo ? 'talentflow_interview_recording.webm' : 'talentflow_interview_recording.webm';
+  }
+
+  if (isVideo) {
+    if (videoContainer) videoContainer.classList.remove('hidden');
+    if (videoPlayer) {
+      videoPlayer.src = state.sessionRecordingUrl;
+      videoPlayer.load();
+    }
+    if (audioContainer) audioContainer.classList.add('hidden');
+  } else {
+    if (audioContainer) audioContainer.classList.remove('hidden');
+    if (audioPlayer) {
+      audioPlayer.src = state.sessionRecordingUrl;
+      audioPlayer.load();
+    }
+    if (videoContainer) videoContainer.classList.add('hidden');
   }
 }
 
@@ -545,6 +693,13 @@ function toggleSimulation() {
     btn.innerHTML = '<span>⏸️</span> <span>Pause</span>';
     btn.className = 'px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-[13px] font-medium transition shadow-md flex items-center gap-2';
     
+    // Start or resume session recording
+    if (state.mediaRecorder && state.mediaRecorder.state === 'paused') {
+      try { state.mediaRecorder.resume(); } catch(e) {}
+    } else if (!state.mediaRecorder || state.mediaRecorder.state === 'inactive') {
+      startSessionRecording();
+    }
+
     if (!state.timerInterval) {
       state.timerInterval = setInterval(() => {
         if (state.secondsLeft > 0) {
@@ -566,6 +721,9 @@ function toggleSimulation() {
   } else {
     btn.innerHTML = '<span>▶</span> <span>Resume</span>';
     btn.className = 'px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[13px] font-medium transition shadow-md flex items-center gap-2';
+    if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+      try { state.mediaRecorder.pause(); } catch(e) {}
+    }
     if (currentAudioPlayer) {
       currentAudioPlayer.pause();
       currentAudioPlayer.currentTime = 0;
@@ -1071,6 +1229,9 @@ async function finishSimulationAndGenerateReport() {
   const timerDisplay = document.getElementById('timer-display');
   if (timerDisplay) timerDisplay.innerText = '05:00';
 
+  // Stop MediaRecorder session recording
+  stopSessionRecording();
+
   // 2. Snapshot current dialogue and video observations to evaluate before clearing
   const sessionDialogue = [...state.dialogueHistory];
   const sessionHadVideo = state.hadVideoInSession;
@@ -1299,6 +1460,22 @@ function startNewInterview() {
     try { state.recognition.abort(); } catch (e) {}
   }
   stopMic();
+
+  stopSessionRecording();
+  state.recordedChunks = [];
+  if (state.sessionRecordingUrl) {
+    try { URL.revokeObjectURL(state.sessionRecordingUrl); } catch (e) {}
+    state.sessionRecordingUrl = null;
+  }
+  state.sessionRecordingBlob = null;
+  state.recordingType = null;
+
+  const recordingCard = document.getElementById('session-recording-card');
+  if (recordingCard) recordingCard.classList.add('hidden');
+  const videoPlayer = document.getElementById('recording-video-player');
+  if (videoPlayer) { videoPlayer.pause(); videoPlayer.src = ''; }
+  const audioPlayer = document.getElementById('recording-audio-player');
+  if (audioPlayer) { audioPlayer.pause(); audioPlayer.src = ''; }
 
   if (state.cameraStream) {
     state.cameraStream.getTracks().forEach(track => {
