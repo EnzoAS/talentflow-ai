@@ -15,6 +15,10 @@ const state = {
   language: 'en-US', // Primary default language: English (US)
   isRunning: false,
   isMicActive: false,
+  isCameraActive: false,
+  cameraStream: null,
+  hadVideoInSession: false,
+  videoObservations: [],
   secondsLeft: 300,
   timerInterval: null,
   recognition: null,
@@ -88,6 +92,15 @@ function updateLanguageUI() {
   // Update button finish text
   const finishTextEl = document.getElementById('btn-finish-text');
   if (finishTextEl) finishTextEl.innerText = isEn ? 'Finish Speaking' : 'Concluir Fala';
+
+  const cameraTextEl = document.getElementById('camera-text');
+  if (cameraTextEl) {
+    if (state.isCameraActive) {
+      cameraTextEl.innerText = isEn ? 'Camera (On)' : 'Câmera (Ligada)';
+    } else {
+      cameraTextEl.innerText = isEn ? 'Camera (Off)' : 'Câmera (Desligada)';
+    }
+  }
 }
 
 function setupKeyboardShortcuts() {
@@ -107,6 +120,11 @@ function switchStage(stage) {
   }
   setSpeakingState(null);
   stopMic();
+
+  // If leaving simulation stage, deactivate camera hardware stream
+  if (stage !== 'one-on-one' && stage !== 'group' && state.isCameraActive) {
+    toggleCamera();
+  }
 
   const headerSteps = document.getElementById('header-steps');
   if (headerSteps) {
@@ -380,6 +398,9 @@ async function requestBotTurn(userMsg = '') {
     if (captionText) captionText.innerText = isEn ? 'Analyzing your answer and formulating the next challenge...' : 'Processando sua resposta...';
   }
 
+  // Multimodal agentic snapshot: capture 1 compressed JPEG frame if camera is active
+  const userSnapshot = (state.isCameraActive && userMsg) ? captureWebcamSnapshot() : null;
+
   try {
     const res = await fetch('/api/simulation/turn', {
       method: 'POST',
@@ -388,6 +409,7 @@ async function requestBotTurn(userMsg = '') {
         mode: state.currentMode,
         dialogue_history: state.dialogueHistory,
         user_message: userMsg,
+        user_image: userSnapshot,
         context: state.analysisContext
       })
     });
@@ -395,6 +417,12 @@ async function requestBotTurn(userMsg = '') {
     const bot = await res.json();
     setSpeakingState(bot.speaker_id);
     
+    // Track agentic visual observations if returned
+    if (bot.visual_observation) {
+      state.videoObservations.push(bot.visual_observation);
+      console.log("Agentic Vision Observation:", bot.visual_observation);
+    }
+
     // 1. Instantly display live closed captions & dialogue on screen (0ms perceived delay)
     document.getElementById('caption-speaker').innerText = `${bot.speaker_name} (${bot.role})`;
     document.getElementById('caption-text').innerText = `"${bot.text}"`;
@@ -593,6 +621,99 @@ function updateMetrics(addedTokens, speaker, text) {
   }
 }
 
+async function toggleCamera() {
+  const btnCamera = document.getElementById('btn-camera');
+  const camIcon = document.getElementById('camera-icon');
+  const camText = document.getElementById('camera-text');
+  const webcamContainer = document.getElementById('webcam-container');
+  const webcamVideo = document.getElementById('webcam-preview');
+  const avatarUser = document.getElementById('avatar-user');
+  const videoBadge = document.getElementById('video-badge');
+  const isEn = (state.language === 'en-US');
+
+  if (state.isCameraActive) {
+    // 1. Turn Camera OFF and cleanly stop hardware tracks
+    if (state.cameraStream) {
+      state.cameraStream.getTracks().forEach(track => {
+        try { track.stop(); } catch (e) {}
+      });
+      state.cameraStream = null;
+    }
+    if (webcamVideo) webcamVideo.srcObject = null;
+    state.isCameraActive = false;
+
+    if (webcamContainer) webcamContainer.classList.add('hidden');
+    if (avatarUser) avatarUser.classList.remove('hidden');
+    if (videoBadge) videoBadge.classList.add('hidden');
+
+    if (btnCamera) {
+      btnCamera.className = 'px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200';
+    }
+    if (camIcon) camIcon.innerText = '📷';
+    if (camText) camText.innerText = isEn ? 'Camera (Off)' : 'Câmera (Desligada)';
+  } else {
+    // 2. Turn Camera ON with standard getUserMedia
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert(isEn ? 'Webcam is not supported on this browser.' : 'Câmera não suportada neste navegador.');
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          facingMode: 'user'
+        },
+        audio: false
+      });
+
+      state.cameraStream = stream;
+      state.isCameraActive = true;
+      state.hadVideoInSession = true;
+
+      if (webcamVideo) {
+        webcamVideo.srcObject = stream;
+        try { await webcamVideo.play(); } catch (e) {}
+      }
+
+      if (webcamContainer) webcamContainer.classList.remove('hidden');
+      if (avatarUser) avatarUser.classList.add('hidden');
+      if (videoBadge) videoBadge.classList.remove('hidden');
+
+      if (btnCamera) {
+        btnCamera.className = 'px-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[14px] font-semibold transition-all flex items-center gap-2 shadow-md border border-indigo-500';
+      }
+      if (camIcon) camIcon.innerText = '📹';
+      if (camText) camText.innerText = isEn ? 'Camera (On)' : 'Câmera (Ligada)';
+    } catch (err) {
+      console.error("Camera access error:", err);
+      alert(isEn 
+        ? "Unable to access webcam. Please check browser permissions." 
+        : "Não foi possível acessar a câmera. Verifique as permissões de vídeo.");
+    }
+  }
+}
+
+function captureWebcamSnapshot() {
+  if (!state.isCameraActive || !state.cameraStream) return null;
+  const video = document.getElementById('webcam-preview');
+  if (!video || video.videoWidth === 0 || video.videoHeight === 0) return null;
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 480;
+    canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // Returns data:image/jpeg;base64,... (~20-30KB compressed)
+    return canvas.toDataURL('image/jpeg', 0.6);
+  } catch (err) {
+    console.warn("Failed to capture snapshot:", err);
+    return null;
+  }
+}
+
 function toggleMicrophone() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert('Speech recognition is not supported in this browser. Please use Google Chrome or click the "Type" button.');
@@ -770,7 +891,7 @@ async function finishSimulationAndGenerateReport() {
   if (state.isEvaluating) return; // Prevent double invocation
   state.isEvaluating = true;
 
-  // 1. Immediately stop simulation loop, timers, mic and active audio
+  // 1. Immediately stop simulation loop, timers, mic, camera and active audio
   state.isRunning = false;
   if (state.timerInterval) {
     clearInterval(state.timerInterval);
@@ -781,6 +902,9 @@ async function finishSimulationAndGenerateReport() {
     currentAudioPlayer.currentTime = 0;
   }
   stopMic();
+  if (state.isCameraActive) {
+    toggleCamera();
+  }
   setSpeakingState(null);
 
   const startBtn = document.getElementById('btn-start-sim');
@@ -789,8 +913,10 @@ async function finishSimulationAndGenerateReport() {
     startBtn.className = 'px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[14px] font-semibold transition-all shadow-md flex items-center gap-2';
   }
 
-  // 2. Snapshot current dialogue to evaluate before clearing
+  // 2. Snapshot current dialogue and video observations to evaluate before clearing
   const sessionDialogue = [...state.dialogueHistory];
+  const sessionHadVideo = state.hadVideoInSession;
+  const sessionVideoObs = [...state.videoObservations];
   
   // Show Scorecard view with loading indicator
   switchStage('report');
@@ -803,7 +929,9 @@ async function finishSimulationAndGenerateReport() {
       body: JSON.stringify({
         dialogue_history: sessionDialogue,
         job_context: state.analysisContext,
-        user_id: state.userId
+        user_id: state.userId,
+        had_video: sessionHadVideo,
+        video_observations: sessionVideoObs
       })
     });
     
@@ -816,6 +944,121 @@ async function finishSimulationAndGenerateReport() {
 
     document.getElementById('overall-score-display').innerHTML = `${evalData.overall_score.toFixed(1)}<span class="text-lg text-slate-400 font-medium">/10</span>`;
     
+    // 1. FAANG Decision Matrix & Seniority Calibration
+    const recBadge = document.getElementById('rec-badge');
+    const seniorityDisplay = document.getElementById('seniority-display');
+    const salaryDisplay = document.getElementById('salary-display');
+    const summaryText = document.getElementById('eval-summary-text');
+
+    const rec = evalData.recommendation || (evalData.overall_score >= 8.5 ? "Strong Hire" : evalData.overall_score >= 7.0 ? "Hire" : evalData.overall_score >= 5.5 ? "Lean Hire" : "Lean No Hire");
+    if (recBadge) {
+      recBadge.innerText = rec;
+      if (rec === "Strong Hire") {
+        recBadge.className = 'px-4 py-1.5 rounded-xl text-sm font-extrabold uppercase tracking-wider font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm';
+      } else if (rec === "Hire") {
+        recBadge.className = 'px-4 py-1.5 rounded-xl text-sm font-extrabold uppercase tracking-wider font-mono bg-blue-500/20 text-blue-300 border border-blue-500/50 shadow-sm';
+      } else if (rec === "Lean Hire") {
+        recBadge.className = 'px-4 py-1.5 rounded-xl text-sm font-extrabold uppercase tracking-wider font-mono bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm';
+      } else {
+        recBadge.className = 'px-4 py-1.5 rounded-xl text-sm font-extrabold uppercase tracking-wider font-mono bg-rose-500/20 text-rose-300 border border-rose-500/50 shadow-sm';
+      }
+    }
+
+    if (seniorityDisplay) seniorityDisplay.innerText = evalData.seniority_level_estimated || "Senior Software Engineer (L5)";
+    if (salaryDisplay) salaryDisplay.innerText = evalData.market_salary_estimate || "$125,000 - $155,000 / yr";
+    if (summaryText) summaryText.innerText = evalData.summary || "";
+
+    // 2. Advanced Seniority Diagnostics (Trade-off, STAR, Signal-to-Noise)
+    const tradeoffScore = evalData.trade_off_score ?? 6.5;
+    const starScore = evalData.star_method_score ?? 6.0;
+    const snrScore = evalData.signal_to_noise_score ?? 7.0;
+
+    const elTradeoffScore = document.getElementById('tradeoff-score');
+    const elTradeoffBar = document.getElementById('tradeoff-bar');
+    const elTradeoffFeedback = document.getElementById('tradeoff-feedback');
+    if (elTradeoffScore) elTradeoffScore.innerText = `${tradeoffScore.toFixed(1)} / 10`;
+    if (elTradeoffBar) elTradeoffBar.style.width = `${Math.min(tradeoffScore * 10, 100)}%`;
+    if (elTradeoffFeedback) elTradeoffFeedback.innerText = evalData.trade_off_feedback || "Demonstrated reasonable balance of technical trade-offs.";
+
+    const elStarScore = document.getElementById('star-score');
+    const elStarBar = document.getElementById('star-bar');
+    const elStarFeedback = document.getElementById('star-feedback');
+    if (elStarScore) elStarScore.innerText = `${starScore.toFixed(1)} / 10`;
+    if (elStarBar) elStarBar.style.width = `${Math.min(starScore * 10, 100)}%`;
+    if (elStarFeedback) elStarFeedback.innerText = evalData.star_method_feedback || "Included situation and actions; could emphasize measurable outcomes.";
+
+    const elSnrScore = document.getElementById('snr-score');
+    const elSnrBar = document.getElementById('snr-bar');
+    const elSnrFeedback = document.getElementById('snr-feedback');
+    if (elSnrScore) elSnrScore.innerText = `${snrScore.toFixed(1)} / 10`;
+    if (elSnrBar) elSnrBar.style.width = `${Math.min(snrScore * 10, 100)}%`;
+    if (elSnrFeedback) elSnrFeedback.innerText = evalData.signal_to_noise_feedback || "Direct communication with high technical signal.";
+
+    // 3. Forensic Moments (Peak vs Critical Gap)
+    if (evalData.peak_moment) {
+      const elPeakBadge = document.getElementById('peak-turn-badge');
+      const elPeakQuote = document.getElementById('peak-quote');
+      const elPeakAnalysis = document.getElementById('peak-analysis');
+      if (elPeakBadge) elPeakBadge.innerText = `Turn ${evalData.peak_moment.turn_index || 1}`;
+      if (elPeakQuote) elPeakQuote.innerText = `"${evalData.peak_moment.quote || ''}"`;
+      if (elPeakAnalysis) elPeakAnalysis.innerText = evalData.peak_moment.analysis || '';
+    }
+
+    if (evalData.critical_gap_moment) {
+      const elGapBadge = document.getElementById('gap-turn-badge');
+      const elGapQuote = document.getElementById('gap-quote');
+      const elGapAnalysis = document.getElementById('gap-analysis');
+      if (elGapBadge) elGapBadge.innerText = `Turn ${evalData.critical_gap_moment.turn_index || 2}`;
+      if (elGapQuote) elGapQuote.innerText = `"${evalData.critical_gap_moment.quote || ''}"`;
+      if (elGapAnalysis) elGapAnalysis.innerText = evalData.critical_gap_moment.analysis || '';
+    }
+
+    // 4. Shadow Answer Coaching
+    const shadowContainer = document.getElementById('shadow-coaching-container');
+    if (shadowContainer) {
+      if (evalData.shadow_coaching && evalData.shadow_coaching.length > 0) {
+        shadowContainer.innerHTML = evalData.shadow_coaching.map(item => `
+          <div class="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-blue-300 font-mono">Turn ${item.turn_index} Comparison</span>
+              <span class="text-[11px] text-slate-400">FAANG Bar Raiser Calibration</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div class="p-3 rounded-xl bg-slate-950/70 border border-red-500/20 flex flex-col gap-1">
+                <span class="text-[10.5px] uppercase tracking-wider font-bold text-rose-400">What You Answered:</span>
+                <p class="text-slate-300 italic">"${item.user_answer}"</p>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-950/70 border border-emerald-500/30 flex flex-col gap-1">
+                <span class="text-[10.5px] uppercase tracking-wider font-bold text-emerald-400">Principal Engineer Rewrite:</span>
+                <p class="text-emerald-100 font-medium">"${item.senior_rewrite}"</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 pt-1 text-[12px] text-slate-300 bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-800/30">
+              <span class="text-amber-400 font-bold">💡 Key Takeaway:</span>
+              <span>${item.key_takeaway}</span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        shadowContainer.innerHTML = `
+          <p class="text-xs text-slate-400 italic">Your answers demonstrated solid technical depth across the board.</p>
+        `;
+      }
+    }
+
+    // 5. Agentic Video Understanding feedback in Scorecard
+    const visualCard = document.getElementById('visual-presence-card');
+    const visualScoreEl = document.getElementById('visual-score-display');
+    const visualFeedbackEl = document.getElementById('visual-feedback-display');
+
+    if (evalData.visual_presence_score != null && visualCard) {
+      if (visualScoreEl) visualScoreEl.innerText = `${evalData.visual_presence_score.toFixed(1)} / 10`;
+      if (visualFeedbackEl) visualFeedbackEl.innerText = evalData.visual_presence_feedback || "Candidate maintained positive composure and steady engagement throughout the video interview.";
+      visualCard.classList.remove('hidden');
+    } else if (visualCard) {
+      visualCard.classList.add('hidden');
+    }
+
     if (evalData.skills && evalData.skills.length > 0) {
       evalData.skills.forEach((skill, idx) => {
         const scoreEl = document.getElementById(`skill-score-${idx}`);
@@ -833,8 +1076,20 @@ async function finishSimulationAndGenerateReport() {
         date: new Date().toLocaleString(),
         mode: '1:1 Technical Interview',
         overallScore: evalData.overall_score,
+        recommendation: rec,
+        seniorityLevel: evalData.seniority_level_estimated,
+        salaryEstimate: evalData.market_salary_estimate,
         summary: evalData.summary,
         skills: evalData.skills,
+        tradeOffScore: evalData.trade_off_score,
+        starScore: evalData.star_method_score,
+        snrScore: evalData.signal_to_noise_score,
+        peakMoment: evalData.peak_moment,
+        gapMoment: evalData.critical_gap_moment,
+        shadowCoaching: evalData.shadow_coaching,
+        hadVideo: sessionHadVideo,
+        visualPresenceScore: evalData.visual_presence_score,
+        visualPresenceFeedback: evalData.visual_presence_feedback,
         dialogue: sessionDialogue
       };
 
@@ -850,6 +1105,8 @@ async function finishSimulationAndGenerateReport() {
     console.error("Erro na avaliação:", err);
   } finally {
     state.isEvaluating = false;
+    state.hadVideoInSession = false;
+    state.videoObservations = [];
     // Clear live transcript feed for next session
     state.dialogueHistory = [];
     state.secondsLeft = 300;
@@ -888,17 +1145,39 @@ function renderHistoryUI() {
     return;
   }
 
-  feed.innerHTML = list.map(item => `
+  feed.innerHTML = list.map(item => {
+    const rec = item.recommendation;
+    let recBadgeHtml = '';
+    if (rec) {
+      const recColor = rec.includes('Strong Hire') ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300' :
+                       rec.includes('Hire') ? 'text-blue-700 bg-blue-50 dark:bg-blue-950/40 border-blue-300' :
+                       rec.includes('Lean Hire') ? 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-300' :
+                       'text-rose-700 bg-rose-50 dark:bg-rose-950/40 border-rose-300';
+      recBadgeHtml = `<span class="micro-label ${recColor} px-2 py-0.5 rounded border font-mono font-bold">${rec}</span>`;
+    }
+
+    return `
     <div class="card-frame p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col gap-4 shadow-sm relative overflow-hidden">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
         <div class="flex items-center gap-3">
           <span class="text-2xl">👨‍💻</span>
           <div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <h4 class="text-sm font-semibold text-slate-900 dark:text-white">${item.mode || '1:1 Technical Interview'}</h4>
               <span class="micro-label ${item.overallScore >= 7 ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200' : 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 border-amber-200'} px-2 py-0.5 rounded border font-mono">
                 Grade: ${item.overallScore.toFixed(1)} / 10
               </span>
+              ${recBadgeHtml}
+              ${item.seniorityLevel ? `
+                <span class="micro-label text-slate-700 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded border font-mono">
+                  ${item.seniorityLevel}
+                </span>
+              ` : ''}
+              ${item.hadVideo ? `
+                <span class="micro-label text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800 px-2 py-0.5 rounded border font-mono">
+                  📹 Video: ${(item.visualPresenceScore || 0).toFixed(1)}/10
+                </span>
+              ` : ''}
             </div>
             <span class="text-[11px] text-slate-400 font-mono">${item.date}</span>
           </div>
@@ -914,6 +1193,26 @@ function renderHistoryUI() {
 
       <!-- Expandable Details -->
       <div id="history-details-${item.id}" class="hidden flex-col gap-4 pt-2">
+        ${item.hadVideo && item.visualPresenceFeedback ? `
+          <div class="p-3 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex flex-col gap-1 text-xs">
+            <div class="flex items-center justify-between text-indigo-900 dark:text-indigo-200 font-bold">
+              <span class="flex items-center gap-1.5"><span>📹</span> Multimodal Video Feedback:</span>
+              <span class="font-mono">${(item.visualPresenceScore || 0).toFixed(1)}/10</span>
+            </div>
+            <p class="text-indigo-800 dark:text-indigo-300 text-[11.5px] leading-relaxed">${item.visualPresenceFeedback}</p>
+          </div>
+        ` : ''}
+
+        ${item.shadowCoaching && item.shadowCoaching.length > 0 ? `
+          <div class="p-3.5 rounded-xl bg-slate-900 text-white flex flex-col gap-2 text-xs">
+            <span class="font-bold text-blue-300 flex items-center gap-1.5"><span>🎓</span> Shadow Coaching (Senior Rewrite):</span>
+            <div class="p-2.5 rounded-lg bg-slate-950/80 border border-emerald-500/20 text-emerald-200 italic">
+              "${item.shadowCoaching[0].senior_rewrite}"
+            </div>
+            <span class="text-[11px] text-slate-400">💡 <strong>Lesson:</strong> ${item.shadowCoaching[0].key_takeaway}</span>
+          </div>
+        ` : ''}
+
         <!-- Competencies -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           ${(item.skills || []).map(s => `
@@ -941,7 +1240,8 @@ function renderHistoryUI() {
         </div>
       </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function toggleHistoryDetails(id) {

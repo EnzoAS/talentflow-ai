@@ -259,14 +259,26 @@
           </div>
 
           <!-- Tile 2: You (Candidate) -->
-          <div id="card-user" class="bg-white border-2 border-blue-500 rounded-3xl p-6 flex flex-col items-center justify-center transition-all min-h-[190px] relative shadow-md ring-4 ring-blue-50">
-            <div class="absolute top-4 right-4 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+          <div id="card-user" class="bg-white border-2 border-blue-500 rounded-3xl p-6 flex flex-col items-center justify-center transition-all min-h-[190px] relative shadow-md ring-4 ring-blue-50 overflow-hidden">
+            <div class="absolute top-4 right-4 flex items-center gap-1.5 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 z-10">
               <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
               <span class="text-[10px] text-blue-700 font-bold uppercase tracking-wider">Você</span>
+              <span id="video-badge" class="hidden text-[9px] bg-emerald-600 text-white font-mono px-1.5 py-0.2 rounded-full ml-1">CAM ON</span>
             </div>
-            <div id="avatar-user" class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 flex items-center justify-center text-4xl mb-3 overflow-hidden shadow-sm">🧑‍💼</div>
-            <h4 class="text-[16px] font-bold text-slate-900" id="card-user-title">Você (Candidato)</h4>
-            <span class="text-[12px] text-slate-500 font-medium mt-0.5">Microfone Ativo</span>
+
+            <!-- Webcam video feed (hidden by default) -->
+            <div id="webcam-container" class="hidden absolute inset-0 w-full h-full bg-slate-900 rounded-3xl overflow-hidden z-0">
+              <video id="webcam-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
+              <div class="absolute bottom-3 left-4 bg-slate-950/70 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="text-[11px] text-white font-medium">Live Video Feed (Agentic Vision)</span>
+              </div>
+            </div>
+
+            <!-- Default Avatar (visible when webcam is OFF) -->
+            <div id="avatar-user" class="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 flex items-center justify-center text-4xl mb-3 overflow-hidden shadow-sm z-10">🧑‍💼</div>
+            <h4 class="text-[16px] font-bold text-slate-900 z-10" id="card-user-title">Você (Candidato)</h4>
+            <span class="text-[12px] text-slate-500 font-medium mt-0.5 z-10" id="user-status-text">Microfone Ativo</span>
           </div>
 
         </div>
@@ -290,6 +302,9 @@
             
             <div class="w-px h-7 bg-slate-200 mx-1"></div>
 
+            <button id="btn-camera" onclick="toggleCamera()" class="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200" title="Turn Camera On/Off (Optional Agentic Video Understanding)">
+              <span id="camera-icon">📷</span> <span id="camera-text">Camera (Off)</span>
+            </button>
             <button id="btn-mic" onclick="toggleMicrophone()" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200">
               <span id="mic-icon">🎙️</span> <span id="mic-text">Microphone</span>
             </button>
@@ -362,6 +377,135 @@
           </div>
         </div>
 
+        <!-- FAANG Decision Matrix & Seniority Calibration Banner -->
+        <div id="verdict-banner" class="p-6 sm:p-7 rounded-3xl bg-slate-900 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl relative overflow-hidden z-10">
+          <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="flex flex-col gap-2.5 max-w-2xl relative z-10">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-[11px] uppercase font-bold tracking-widest text-slate-300">FAANG Hiring Decision Matrix</span>
+              <span class="text-slate-500">•</span>
+              <span class="text-[11px] text-slate-400 font-mono" id="seniority-calibration-tag">Calibrated Assessment</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <div id="rec-badge" class="px-4 py-1.5 rounded-xl text-sm font-extrabold uppercase tracking-wider font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                Evaluation Pending
+              </div>
+              <span class="text-xl sm:text-2xl font-bold text-white tracking-tight" id="seniority-display">Target Level Calibration</span>
+            </div>
+            <p class="text-[13.5px] text-slate-300 leading-relaxed mt-1" id="eval-summary-text">
+              Complete your technical interview to receive a calibrated executive assessment.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-4 shrink-0 bg-white/5 border border-white/10 px-6 py-4 rounded-2xl backdrop-blur-md relative z-10">
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Estimated Market Compensation</span>
+              <span class="text-xl font-mono font-bold text-emerald-400" id="salary-display">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Seniority Diagnostics (3-Column Bento Grid) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 relative z-10">
+          <!-- Metric 1: Trade-Off Reasoning -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3 shadow-sm">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <span>⚖️</span> Trade-Off Reasoning
+                </span>
+                <span class="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100" id="tradeoff-score">-- / 10</span>
+              </div>
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden my-2">
+                <div id="tradeoff-bar" class="bg-blue-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+              <p class="text-[12.5px] text-slate-600 leading-relaxed" id="tradeoff-feedback">Awaiting interview analysis.</p>
+            </div>
+          </div>
+
+          <!-- Metric 2: STAR Method Tangibility -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3 shadow-sm">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <span>🎯</span> STAR Tangibility & Metrics
+                </span>
+                <span class="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100" id="star-score">-- / 10</span>
+              </div>
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden my-2">
+                <div id="star-bar" class="bg-emerald-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+              <p class="text-[12.5px] text-slate-600 leading-relaxed" id="star-feedback">Awaiting interview analysis.</p>
+            </div>
+          </div>
+
+          <!-- Metric 3: Signal-to-Noise Ratio -->
+          <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between gap-3 shadow-sm">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                  <span>📡</span> Signal-to-Noise Ratio
+                </span>
+                <span class="font-mono text-xs font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100" id="snr-score">-- / 10</span>
+              </div>
+              <div class="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden my-2">
+                <div id="snr-bar" class="bg-purple-600 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+              </div>
+              <p class="text-[12.5px] text-slate-600 leading-relaxed" id="snr-feedback">Awaiting interview analysis.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forensic Moments (Peak vs Critical Gap) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
+          <!-- Peak Moment -->
+          <div id="peak-moment-card" class="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200 flex flex-col gap-2.5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                <span>🌟</span> Peak Performance Moment
+              </span>
+              <span class="text-[11px] font-mono text-emerald-700 font-bold bg-white px-2 py-0.5 rounded-md border border-emerald-200" id="peak-turn-badge">Turn --</span>
+            </div>
+            <blockquote class="italic text-[13px] text-emerald-950 font-serif border-l-2 border-emerald-400 pl-3 my-1" id="peak-quote">
+              "Awaiting interview dialogue..."
+            </blockquote>
+            <p class="text-[12.5px] text-emerald-800" id="peak-analysis">The evaluator will highlight your highest signal answer here.</p>
+          </div>
+
+          <!-- Critical Gap Moment -->
+          <div id="gap-moment-card" class="p-5 rounded-2xl bg-amber-50/60 border border-amber-200 flex flex-col gap-2.5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                <span>⚠️</span> Critical Vulnerability / Gap
+              </span>
+              <span class="text-[11px] font-mono text-amber-700 font-bold bg-white px-2 py-0.5 rounded-md border border-amber-200" id="gap-turn-badge">Turn --</span>
+            </div>
+            <blockquote class="italic text-[13px] text-amber-950 font-serif border-l-2 border-amber-400 pl-3 my-1" id="gap-quote">
+              "Awaiting interview dialogue..."
+            </blockquote>
+            <p class="text-[12.5px] text-amber-800" id="gap-analysis">The evaluator will diagnose the stumble or missing depth here.</p>
+          </div>
+        </div>
+
+        <!-- Shadow Answer Coaching Section -->
+        <div id="shadow-coaching-wrapper" class="p-6 rounded-3xl bg-slate-900 text-white flex flex-col gap-4 shadow-lg relative overflow-hidden z-10">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎓</span>
+              <div>
+                <h4 class="text-sm font-bold text-white">Shadow Coaching — Principal Engineer Rewrite</h4>
+                <p class="text-[12px] text-slate-400">Transforming your weaker turns into high-impact, FAANG-ready answers.</p>
+              </div>
+            </div>
+            <span class="text-[11px] uppercase tracking-wider font-mono text-blue-400 bg-blue-950/60 border border-blue-800 px-2.5 py-1 rounded-lg">High-Leverage Learning</span>
+          </div>
+
+          <div id="shadow-coaching-container" class="flex flex-col gap-4">
+            <p class="text-xs text-slate-400 italic">Shadow rewrites will generate automatically after your interview.</p>
+          </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-12 gap-8 relative z-10 items-center">
           
           <!-- Radar Chart Column -->
@@ -422,6 +566,20 @@
               <p class="text-[13px] text-slate-500 mt-1" id="skill-feedback-3">Awaiting interview completion for AI evaluation.</p>
             </div>
           </div>
+        </div>
+
+        <!-- Optional Visual Presence Section (Agentic Video Understanding) -->
+        <div id="visual-presence-card" class="hidden p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex flex-col gap-3 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📹</span>
+              <span class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Agentic Multimodal Video Feedback</span>
+            </div>
+            <span class="font-mono text-indigo-700 font-bold bg-white px-3 py-1 rounded-xl border border-indigo-200 text-sm" id="visual-score-display">-- / 10</span>
+          </div>
+          <p class="text-[13.5px] text-indigo-900/90 leading-relaxed" id="visual-feedback-display">
+            Video analysis feedback will appear here.
+          </p>
         </div>
 
         <button onclick="switchStage('history')" class="w-full py-4 rounded-xl bg-slate-900 text-white font-semibold text-[14px] hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition shadow-md flex items-center justify-center gap-2 mt-2">
