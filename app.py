@@ -59,6 +59,7 @@ def generate_structured_gemini(contents, schema, temperature=0.5, max_tokens=350
 class AnalyzeRequest(BaseModel):
     cv_text: str
     job_text: str
+    language: str | None = "en-US"
 
 class SimulationTurnRequest(BaseModel):
     mode: str
@@ -66,7 +67,7 @@ class SimulationTurnRequest(BaseModel):
     user_message: str
     context: dict
     user_image: str | None = None
-    language: str | None = "pt-BR"
+    language: str | None = "en-US"
 
 # --- Pydantic Schemas for Gemini Structured Outputs ---
 
@@ -128,11 +129,18 @@ class ATSAnalysisResponse(BaseModel):
 
 # --- Function Calling & ATS Tool ---
 
-def extract_cv_gaps(cv: str, job: str) -> dict:
+def extract_cv_gaps(cv: str, job: str, language: str = "en-US") -> dict:
     """
     Analyzes the CV against the Job Description, autonomously identifies the career domain (Tech, Marketing, Finance, Sales, Design, Operations, etc.),
     detects skill gaps, and generates an Adaptive Interview Playbook with specialized interviewer personas.
     """
+    is_pt = bool(language and ("pt" in language.lower() or "br" in language.lower()))
+    lang_inst = (
+        "Output all text fields (domain, summary, interviewer_role, simulation_focus, and interview_playbook) in natural Brazilian Portuguese (pt-BR)."
+        if is_pt else
+        "Output all text fields (domain, summary, interviewer_role, simulation_focus, and interview_playbook) in natural, professional English (en-US)."
+    )
+
     prompt = f"""
     You are an Expert ATS Evaluator & Multi-Domain Interview Strategist.
     Analyze the candidate's CV against the target Job Description in depth.
@@ -149,11 +157,29 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
     3. Calculate a realistic ATS match_score (0-100) based on actual keyword alignment.
     4. Extract real, domain-specific present keywords from the CV and missing keywords from the job description.
     5. Formulate an adaptive 1:1 interview focus and a 3-step playbook specifically tailored to this industry.
+    6. {lang_inst}
     """
     try:
         return generate_structured_gemini(prompt, ATSAnalysisResponse, temperature=0.3, max_tokens=3500)
     except Exception as e:
         print("[extract_cv_gaps fallback]:", e)
+        if is_pt:
+            return {
+                "match_score": 85,
+                "domain": "Especialista de Domínio",
+                "interviewer_name": "Dr. Carlos Mendes",
+                "interviewer_role": "Entrevistador Líder Executivo",
+                "interviewer_avatar": "👨‍💼",
+                "summary": "Alinhamento competitivo identificado com gaps de domínio a defender na entrevista.",
+                "present_keywords": ["Experiência Profissional", "Competências Principais"],
+                "missing_keywords": ["Metodologias Avançadas", "Estratégia Cross-funcional"],
+                "simulation_focus": "Avaliar competências técnicas centrais, resolução de problemas sob pressão e trade-offs estratégicos.",
+                "interview_playbook": [
+                    "Investigar casos práticos passados e gestão de crises",
+                    "Avaliar trade-offs técnicos e decisões metodológicas",
+                    "Analisar tomada de decisão estratégica e comunicação com equipes"
+                ]
+            }
         return {
             "match_score": 85,
             "domain": "Domain Specialist",
@@ -178,7 +204,7 @@ def analyze_cv_endpoint(req: AnalyzeRequest):
     """
     Endpoint that triggers the ATS Agent tool and builds the domain-adaptive interview playbook.
     """
-    result = extract_cv_gaps(req.cv_text, req.job_text)
+    result = extract_cv_gaps(req.cv_text, req.job_text, language=req.language or "en-US")
     return result
 
 @app.post("/api/simulation/turn")
@@ -356,7 +382,7 @@ class EvaluationRequest(BaseModel):
     user_id: str = "anonymous_default"
     had_video: bool = False
     video_observations: list[str] = []
-    language: str | None = "pt-BR"
+    language: str | None = "en-US"
 
 @app.post("/api/evaluate-simulation")
 def evaluate_simulation_endpoint(req: EvaluationRequest):

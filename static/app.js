@@ -8,11 +8,244 @@ function getOrCreateUserId() {
   return uid;
 }
 
+const I18N = {
+  'en-US': {
+    brandSub: "Career Studio",
+    tabCv: "1. Diagnostic",
+    tabSim: "2. 1:1 Interview",
+    tabReport: "3. Scorecard",
+    tabHistory: "📜 4. History",
+    flag: "🇺🇸",
+    langName: "English (US)",
+
+    // Landing
+    landingTitle: "Master real-world interviews with AI Agents.",
+    landingDesc: "TalentFlow orchestrates dynamic simulations with AI interviewers using your resume and target job. Practice in real-time, earn a verified Executive Scorecard, and stand out.",
+    landingCta: "Start Interview Simulation",
+    landingFeat1: "✓ ATS Gap Analysis",
+    landingFeat2: "✓ Adaptive 1:1 Interviewer",
+    landingFeat3: "✓ Skill Radar Scorecard",
+
+    // Stage 1 Diagnostic
+    stage1Badge: "Stage 1 of 4",
+    stage1Title: "Resume & Job<br>Diagnostic",
+    stage1Desc: "We evaluate your profile against target job criteria using advanced ATS metrics to calibrate the interview difficulty and pressure points.",
+    stage1Feat1: "Technical Gap Detection",
+    stage1Feat2: "Competency Alignment",
+    stage1Feat3: "Multi-Agent Playbook Prep",
+    labelCv: "Your Resume (CV)",
+    uploadPdf: "Upload PDF",
+    useSample: "Use Sample",
+    cvPlaceholder: "Paste your resume text here, or summarize your key professional experience...",
+    labelJob: "Target Job Description",
+    jobPlaceholder: "Paste target job requirements and responsibilities here...",
+    btnAnalyze: "Analyze Match & Gaps",
+    btnAnalyzing: "Analyzing Profile...",
+
+    // Stage 1 Analysis Results
+    domainBadgeDefault: "ATS Ingestion Complete",
+    domainTitleDefault: "Resume Alignment Overview",
+    matchScoreLabel: "Match Score:",
+    confirmedComp: "Confirmed Competencies",
+    criticalGaps: "Critical Gaps to Defend",
+    strategyFocus: "🎯 Interviewer Strategy Focus",
+    btnStartInterviewDefault: "Start 1:1 Technical Interview",
+
+    // Stage 2 Simulation Studio
+    simContextTitle: "1:1 Technical Interview",
+    simContextSubtitle: "1:1 Executive Interview",
+    transcriptBtn: "Transcript",
+    userBadge: "You",
+    userTitle: "You (Candidate)",
+    userStatusReady: "Microphone Ready",
+    userStatusActive: "Microphone Active",
+    webcamLiveLabel: "Live Video Feed (Agentic Vision)",
+    captionDefault: (name) => `Click "▶ Start" below to begin the 1:1 technical interview with ${name}.`,
+    captionThinking: (speaker) => `${speaker} (Thinking...)`,
+    captionAnalyzing: "Analyzing your answer and formulating the next challenge...",
+    captionYourTurn: "Your Turn to Speak",
+    captionYourTurnHint: 'Speak into the microphone or click "Type" to reply.',
+    captionNoSpeech: "No speech detected. Click Microphone or Type to reply.",
+    btnStart: "Start",
+    btnPause: "Pause",
+    btnResume: "Resume",
+    cameraOff: "Camera (Off)",
+    cameraOn: "Camera (On)",
+    micText: "Microphone",
+    finishSpeaking: "Finish Speaking",
+    typeText: "Type",
+    endSimulation: "End Simulation",
+    drawerTitle: "Dialogue Transcript",
+    drawerVoiceLabel: "Voice Active",
+
+    // Stage 3 Scorecard
+    evalCompleteBadge: "Evaluation Complete",
+    scorecardTitle: "Executive Scorecard",
+    scorecardDesc: "Holistic cross-evaluation between your Resume Fit and real-time Live Interview Performance.",
+    scorecardCvLabel: "1. Resume Score (ATS)",
+    scorecardLiveLabel: "2. Live Interview Grade",
+    faangMatrixLabel: "FAANG Hiring Decision Matrix",
+    calibratedTag: "Calibrated Assessment",
+    evalPendingBadge: "Evaluation Pending",
+    targetLevelCalib: "Target Level Calibration",
+    evalSummaryDefault: "Complete your technical interview to receive a calibrated executive assessment.",
+    salaryLabel: "Estimated Market Compensation",
+    tradeoffTitle: "Trade-Off Reasoning",
+    starTitle: "STAR Tangibility & Metrics",
+    snrTitle: "Signal-to-Noise Ratio",
+    peakTitle: "Peak Performance Moment",
+    gapTitle: "Critical Vulnerability / Gap",
+    shadowTitle: "Shadow Coaching — Principal Engineer Rewrite",
+    shadowDesc: "Transforming your weaker turns into high-impact, FAANG-ready answers.",
+    shadowTag: "High-Leverage Learning",
+    radarLabel: "Competency Mapping",
+    visualPresenceLabel: "Agentic Multimodal Video Feedback",
+    recordingTitle: "Interview Recording & Replay",
+    recordingDesc: "Watch or listen to your recorded performance for forensic self-review.",
+    downloadRecording: "Download Recording (.webm)",
+    audioSessionTitle: "Session Audio Recording",
+    btnNewSim: "Start New Simulation",
+    btnHistory: "View Session History",
+
+    // Stage 4 History
+    historyBadge: "Memory & Evolution",
+    historyTitle: "Interview Session History",
+    historyDesc: "Review complete dialogue transcripts, answers, and long-term grade evolution saved in Firestore.",
+    clearHistoryBtn: "Clear History",
+    noHistoryTitle: "No interview sessions recorded yet",
+    noHistoryDesc: "Complete a live 1:1 interview and click 'End Simulation' to save your executive review and full transcript here.",
+    historyGrade: "Grade",
+    historyViewDetails: "View Details & Transcript ▾",
+    historyFullTranscript: "Full Dialogue Transcript:",
+
+    // Modal
+    modalTitle: "Type Message to Participants",
+    modalPlaceholder: "Type your response or question...",
+    modalCancel: "Cancel",
+    modalSend: "Send"
+  },
+  'pt-BR': {
+    brandSub: "Studio de Carreira",
+    tabCv: "1. Diagnóstico",
+    tabSim: "2. Entrevista 1:1",
+    tabReport: "3. Scorecard",
+    tabHistory: "📜 4. Histórico",
+    flag: "🇧🇷",
+    langName: "Português (BR)",
+
+    // Landing
+    landingTitle: "Domine entrevistas técnicas e comportamentais com Agentes de IA.",
+    landingDesc: "O TalentFlow orquestra simulações dinâmicas com entrevistadores de IA baseados no seu currículo e vaga. Pratique em tempo real, receba um Scorecard Executivo e se destaque.",
+    landingCta: "Iniciar Simulação de Entrevista",
+    landingFeat1: "✓ Análise de Gaps ATS",
+    landingFeat2: "✓ Entrevistador Adaptativo 1:1",
+    landingFeat3: "✓ Scorecard com Radar de Competências",
+
+    // Stage 1 Diagnostic
+    stage1Badge: "Etapa 1 de 4",
+    stage1Title: "Diagnóstico de<br>Currículo & Vaga",
+    stage1Desc: "Avaliamos seu perfil contra critérios da vaga usando métricas avançadas de ATS para calibrar a dificuldade e pontos de pressão da entrevista.",
+    stage1Feat1: "Detecção de Gaps Técnicos",
+    stage1Feat2: "Alinhamento de Competências",
+    stage1Feat3: "Preparo do Playbook Multi-Agente",
+    labelCv: "Seu Currículo (CV)",
+    uploadPdf: "Anexar PDF",
+    useSample: "Usar Exemplo",
+    cvPlaceholder: "Cole o texto do seu currículo aqui, ou resuma suas principais experiências...",
+    labelJob: "Descrição da Vaga Desejada",
+    jobPlaceholder: "Cole aqui os requisitos e responsabilidades da vaga desejada...",
+    btnAnalyze: "Analisar Compatibilidade & Gaps",
+    btnAnalyzing: "Analisando Perfil...",
+
+    // Stage 1 Analysis Results
+    domainBadgeDefault: "Ingestão ATS Concluída",
+    domainTitleDefault: "Visão Geral de Alinhamento",
+    matchScoreLabel: "Pontuação de Match:",
+    confirmedComp: "Competências Confirmadas",
+    criticalGaps: "Gaps Críticos a Defender",
+    strategyFocus: "🎯 Foco Estratégico do Entrevistador",
+    btnStartInterviewDefault: "Iniciar Entrevista Técnica 1:1",
+
+    // Stage 2 Simulation Studio
+    simContextTitle: "Entrevista Técnica 1:1",
+    simContextSubtitle: "Entrevista Executiva 1:1",
+    transcriptBtn: "Transcrição",
+    userBadge: "Você",
+    userTitle: "Você (Candidato)",
+    userStatusReady: "Microfone Pronto",
+    userStatusActive: "Microfone Ativo",
+    webcamLiveLabel: "Transmissão ao Vivo (Visão do Agente)",
+    captionDefault: (name) => `Clique em "▶ Start" abaixo para começar a entrevista técnica 1:1 com ${name}.`,
+    captionThinking: (speaker) => `${speaker} (Pensando...)`,
+    captionAnalyzing: "Processando sua resposta e formulando o próximo desafio...",
+    captionYourTurn: "Sua vez de falar",
+    captionYourTurnHint: 'Fale no microfone ou clique em "Digitar" para responder.',
+    captionNoSpeech: "Nenhuma fala detectada. Clique no Microfone ou em Digitar para responder.",
+    btnStart: "Start",
+    btnPause: "Pausa",
+    btnResume: "Retomar",
+    cameraOff: "Câmera (Desligada)",
+    cameraOn: "Câmera (Ligada)",
+    micText: "Microfone",
+    finishSpeaking: "Concluir Fala",
+    typeText: "Digitar",
+    endSimulation: "Encerrar Simulação",
+    drawerTitle: "Transcrição do Diálogo",
+    drawerVoiceLabel: "Voz Ativa",
+
+    // Stage 3 Scorecard
+    evalCompleteBadge: "Avaliação Concluída",
+    scorecardTitle: "Scorecard Executivo",
+    scorecardDesc: "Avaliação cruzada holística entre seu Currículo e seu Desempenho na Entrevista ao Vivo.",
+    scorecardCvLabel: "1. Nota do Currículo (ATS)",
+    scorecardLiveLabel: "2. Nota da Entrevista ao Vivo",
+    faangMatrixLabel: "Matriz de Decisão de Contratação FAANG",
+    calibratedTag: "Avaliação Calibrada",
+    evalPendingBadge: "Avaliação Pendente",
+    targetLevelCalib: "Calibração de Nível",
+    evalSummaryDefault: "Complete sua entrevista técnica para receber uma avaliação executiva calibrada.",
+    salaryLabel: "Remuneração de Mercado Estimada",
+    tradeoffTitle: "Raciocínio de Trade-Offs",
+    starTitle: "Método STAR & Métricas",
+    snrTitle: "Relação Sinal-Ruído",
+    peakTitle: "Momento de Pico Técnico",
+    gapTitle: "Vulnerabilidade Crítica / Gap",
+    shadowTitle: "Shadow Coaching — Reescrita Nível Principal",
+    shadowDesc: "Transformando suas respostas fracas em respostas de alto impacto no padrão FAANG.",
+    shadowTag: "Aprendizado de Alto Impacto",
+    radarLabel: "Mapeamento de Competências",
+    visualPresenceLabel: "Feedback Multimodal de Vídeo do Agente",
+    recordingTitle: "Replay da Sua Entrevista Gravada",
+    recordingDesc: "Assista ou ouça sua performance gravada para autoavaliação forense.",
+    downloadRecording: "Baixar Gravação (.webm)",
+    audioSessionTitle: "Gravação de Áudio da Sessão",
+    btnNewSim: "Iniciar Nova Simulação",
+    btnHistory: "Ver Histórico de Sessões",
+
+    // Stage 4 History
+    historyBadge: "Memória & Evolução",
+    historyTitle: "Histórico de Entrevistas",
+    historyDesc: "Revise transcrições completas de diálogos, respostas e evolução histórica de notas salvas no Firestore.",
+    clearHistoryBtn: "Limpar Histórico",
+    noHistoryTitle: "Nenhuma sessão de entrevista registrada ainda",
+    noHistoryDesc: "Conclua uma entrevista 1:1 ao vivo e clique em 'Encerrar Simulação' para salvar sua avaliação executiva e transcrição aqui.",
+    historyGrade: "Nota",
+    historyViewDetails: "Ver Detalhes e Transcrição ▾",
+    historyFullTranscript: "Transcrição Completa do Diálogo:",
+
+    // Modal
+    modalTitle: "Digitar Mensagem para os Participantes",
+    modalPlaceholder: "Digite sua proposta ou argumento...",
+    modalCancel: "Cancelar",
+    modalSend: "Enviar"
+  }
+};
+
 const state = {
   userId: getOrCreateUserId(),
   currentStage: 'landing',
   currentMode: 'one-on-one',
-  language: 'pt-BR', // Primary default language: Português (BR)
+  language: 'en-US', // Primary default language: English (US)
   isRunning: false,
   isMicActive: false,
   isCameraActive: false,
@@ -83,52 +316,227 @@ function toggleSimulationLanguage() {
 }
 
 function updateLanguageUI() {
-  const isEn = (state.language === 'en-US');
-  const flagEl = document.getElementById('lang-flag');
-  if (flagEl) flagEl.innerText = isEn ? '🇺🇸' : '🇧🇷';
-  const textEl = document.getElementById('lang-text');
-  if (textEl) textEl.innerText = isEn ? 'English (US)' : 'Português (BR)';
+  const currentLang = state.language || 'en-US';
+  const t = I18N[currentLang] || I18N['en-US'];
+  const isEn = (currentLang === 'en-US');
 
-  const btn = document.getElementById('btn-lang-toggle');
-  if (btn) {
-    btn.className = isEn 
-      ? 'bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-2 text-xs font-semibold transition cursor-pointer'
-      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-2 text-xs font-semibold transition cursor-pointer';
+  // Update Flag & Language Name in all toggle buttons
+  document.querySelectorAll('.lang-flag-display').forEach(el => el.innerText = t.flag);
+  document.querySelectorAll('.lang-text-display').forEach(el => el.innerText = t.langName);
+  const flagEl = document.getElementById('lang-flag');
+  if (flagEl) flagEl.innerText = t.flag;
+  const textEl = document.getElementById('lang-text');
+  if (textEl) textEl.innerText = t.langName;
+
+  // Buttons styling
+  const toggleButtons = [document.getElementById('btn-lang-toggle'), document.getElementById('btn-lang-toggle-sim')];
+  toggleButtons.forEach(btn => {
+    if (!btn) return;
+    btn.title = isEn ? "Toggle Language (English / Português)" : "Alternar Idioma (Português / English)";
+    if (btn.id === 'btn-lang-toggle') {
+      btn.className = isEn
+        ? 'px-3.5 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/90 hover:bg-blue-100 text-blue-900 dark:text-blue-100 text-xs font-semibold transition shadow-sm flex items-center gap-1.5 cursor-pointer'
+        : 'px-3.5 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/90 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-100 text-xs font-semibold transition shadow-sm flex items-center gap-1.5 cursor-pointer';
+    } else {
+      btn.className = isEn
+        ? 'px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-2 text-xs font-semibold transition cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200'
+        : 'px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-2 text-xs font-semibold transition cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200';
+    }
+  });
+
+  // Top header brand and steps
+  const brandSub = document.getElementById('header-brand-sub');
+  if (brandSub) brandSub.innerText = t.brandSub;
+
+  const tabCv = document.getElementById('tab-cv');
+  if (tabCv) tabCv.innerText = t.tabCv;
+  const tabSim = document.getElementById('tab-one-on-one');
+  if (tabSim) tabSim.innerText = t.tabSim;
+  const tabReport = document.getElementById('tab-report');
+  if (tabReport) tabReport.innerText = t.tabReport;
+  const tabHistory = document.getElementById('tab-history');
+  if (tabHistory) tabHistory.innerText = t.tabHistory;
+
+  // Landing
+  const landingTitle = document.getElementById('landing-title');
+  if (landingTitle) landingTitle.innerText = t.landingTitle;
+  const landingDesc = document.getElementById('landing-desc');
+  if (landingDesc) landingDesc.innerText = t.landingDesc;
+  const landingCta = document.getElementById('landing-cta-text');
+  if (landingCta) landingCta.innerText = t.landingCta;
+  const landingFeat1 = document.getElementById('landing-feat-1');
+  if (landingFeat1) landingFeat1.innerText = t.landingFeat1;
+  const landingFeat2 = document.getElementById('landing-feat-2');
+  if (landingFeat2) landingFeat2.innerText = t.landingFeat2;
+  const landingFeat3 = document.getElementById('landing-feat-3');
+  if (landingFeat3) landingFeat3.innerText = t.landingFeat3;
+
+  // Stage 1 Diagnostic
+  const stage1Badge = document.getElementById('stage1-badge');
+  if (stage1Badge) stage1Badge.innerText = t.stage1Badge;
+  const stage1Title = document.getElementById('stage1-title');
+  if (stage1Title) stage1Title.innerHTML = t.stage1Title;
+  const stage1Desc = document.getElementById('stage1-desc');
+  if (stage1Desc) stage1Desc.innerText = t.stage1Desc;
+  const stage1Feat1 = document.getElementById('stage1-feat-1');
+  if (stage1Feat1) stage1Feat1.innerText = t.stage1Feat1;
+  const stage1Feat2 = document.getElementById('stage1-feat-2');
+  if (stage1Feat2) stage1Feat2.innerText = t.stage1Feat2;
+  const stage1Feat3 = document.getElementById('stage1-feat-3');
+  if (stage1Feat3) stage1Feat3.innerText = t.stage1Feat3;
+  const labelCv = document.getElementById('label-cv');
+  if (labelCv) labelCv.innerText = t.labelCv;
+  const btnUploadText = document.getElementById('btn-upload-text');
+  if (btnUploadText) btnUploadText.innerText = t.uploadPdf;
+  const btnSampleText = document.getElementById('btn-sample-text');
+  if (btnSampleText) btnSampleText.innerText = t.useSample;
+  const cvInput = document.getElementById('cv-input');
+  if (cvInput) cvInput.placeholder = t.cvPlaceholder;
+  const labelJob = document.getElementById('label-job');
+  if (labelJob) labelJob.innerText = t.labelJob;
+  const jobInput = document.getElementById('job-input');
+  if (jobInput) jobInput.placeholder = t.jobPlaceholder;
+  const btnRunAnalysisText = document.getElementById('btn-run-analysis-text');
+  if (btnRunAnalysisText) btnRunAnalysisText.innerText = t.btnAnalyze;
+
+  // Stage 1 Result Panel
+  const matchScoreLabel = document.getElementById('analysis-match-label');
+  if (matchScoreLabel) matchScoreLabel.innerText = t.matchScoreLabel;
+  const confirmedComp = document.getElementById('confirmed-comp-label');
+  if (confirmedComp) confirmedComp.innerText = t.confirmedComp;
+  const criticalGaps = document.getElementById('critical-gaps-label');
+  if (criticalGaps) criticalGaps.innerText = t.criticalGaps;
+  const strategyFocus = document.getElementById('strategy-focus-label');
+  if (strategyFocus) strategyFocus.innerText = t.strategyFocus;
+  if (!state.analysisContext) {
+    const domainBadge = document.getElementById('analysis-domain-badge');
+    if (domainBadge) domainBadge.innerText = t.domainBadgeDefault;
+    const domainTitle = document.getElementById('analysis-domain-title');
+    if (domainTitle) domainTitle.innerText = t.domainTitleDefault;
+    const btnStartAnalysisText = document.getElementById('btn-start-analysis-text');
+    if (btnStartAnalysisText) btnStartAnalysisText.innerText = t.btnStartInterviewDefault;
   }
 
-  // Update button finish text
-  const finishTextEl = document.getElementById('btn-finish-text');
-  if (finishTextEl) finishTextEl.innerText = isEn ? 'Finish Speaking' : 'Concluir Fala';
+  // Stage 2 Simulation Studio
+  const contextTitle = document.getElementById('context-title');
+  if (contextTitle) contextTitle.innerText = t.simContextTitle;
+  const contextSubtitle = document.getElementById('context-subtitle');
+  if (contextSubtitle) contextSubtitle.innerText = t.simContextSubtitle;
+  const transcriptBtnText = document.getElementById('transcript-btn-text');
+  if (transcriptBtnText) transcriptBtnText.innerText = t.transcriptBtn;
+  const userBadge = document.getElementById('user-badge-label');
+  if (userBadge) userBadge.innerText = t.userBadge;
+  const userTitle = document.getElementById('card-user-title');
+  if (userTitle) userTitle.innerText = t.userTitle;
+  const userStatus = document.getElementById('user-status-text');
+  if (userStatus) userStatus.innerText = state.isMicActive ? t.userStatusActive : t.userStatusReady;
+  const webcamLiveLabel = document.getElementById('webcam-live-label');
+  if (webcamLiveLabel) webcamLiveLabel.innerText = t.webcamLiveLabel;
 
-  const typeTextEl = document.getElementById('btn-type-text');
-  if (typeTextEl) typeTextEl.innerText = isEn ? 'Type' : 'Digitar';
+  if (state.dialogueHistory.length === 0 && !state.isRunning) {
+    const expertName = (state.analysisContext && state.analysisContext.interviewer_name) || 'Carlos Mendes';
+    const captionText = document.getElementById('caption-text');
+    if (captionText) captionText.innerText = t.captionDefault(expertName);
+  }
 
-  const endTextEl = document.getElementById('btn-end-text');
-  if (endTextEl) endTextEl.innerText = isEn ? 'End Simulation' : 'Encerrar Simulação';
-
-  const newSimTextEl = document.getElementById('btn-new-sim-text');
-  if (newSimTextEl) newSimTextEl.innerText = isEn ? 'Start New Simulation' : 'Iniciar Nova Simulação';
-
-  const historyTextEl = document.getElementById('btn-history-text');
-  if (historyTextEl) historyTextEl.innerText = isEn ? 'View Session History' : 'Ver Histórico de Sessões';
-
+  const btnStartSimText = document.getElementById('btn-start-sim-text');
+  if (btnStartSimText) {
+    btnStartSimText.innerText = state.isRunning ? t.btnPause : t.btnStart;
+  }
   const cameraTextEl = document.getElementById('camera-text');
   if (cameraTextEl) {
-    if (state.isCameraActive) {
-      cameraTextEl.innerText = isEn ? 'Camera (On)' : 'Câmera (Ligada)';
-    } else {
-      cameraTextEl.innerText = isEn ? 'Camera (Off)' : 'Câmera (Desligada)';
-    }
+    cameraTextEl.innerText = state.isCameraActive ? t.cameraOn : t.cameraOff;
   }
+  const micTextEl = document.getElementById('mic-text');
+  if (micTextEl) micTextEl.innerText = t.micText;
+  const finishTextEl = document.getElementById('btn-finish-text');
+  if (finishTextEl) finishTextEl.innerText = t.finishSpeaking;
+  const typeTextEl = document.getElementById('btn-type-text');
+  if (typeTextEl) typeTextEl.innerText = t.typeText;
+  const endTextEl = document.getElementById('btn-end-text');
+  if (endTextEl) endTextEl.innerText = t.endSimulation;
+  const drawerTitle = document.getElementById('drawer-title');
+  if (drawerTitle) drawerTitle.innerText = t.drawerTitle;
+  const drawerVoiceLabel = document.getElementById('drawer-voice-label');
+  if (drawerVoiceLabel) drawerVoiceLabel.innerText = t.drawerVoiceLabel;
+
+  // Stage 3 Scorecard
+  const evalBadge = document.getElementById('eval-status-badge');
+  if (evalBadge) evalBadge.innerText = t.evalCompleteBadge;
+  const scorecardTitle = document.getElementById('scorecard-title');
+  if (scorecardTitle) scorecardTitle.innerText = t.scorecardTitle;
+  const scorecardDesc = document.getElementById('scorecard-desc');
+  if (scorecardDesc) scorecardDesc.innerText = t.scorecardDesc;
+  const scorecardCvLabel = document.getElementById('scorecard-cv-label');
+  if (scorecardCvLabel) scorecardCvLabel.innerText = t.scorecardCvLabel;
+  const scorecardLiveLabel = document.getElementById('scorecard-live-label');
+  if (scorecardLiveLabel) scorecardLiveLabel.innerText = t.scorecardLiveLabel;
+  const faangMatrixLabel = document.getElementById('faang-matrix-label');
+  if (faangMatrixLabel) faangMatrixLabel.innerText = t.faangMatrixLabel;
+  const calibratedTag = document.getElementById('seniority-calibration-tag');
+  if (calibratedTag) calibratedTag.innerText = t.calibratedTag;
+  const salaryLabel = document.getElementById('salary-label');
+  if (salaryLabel) salaryLabel.innerText = t.salaryLabel;
+
+  const tradeoffTitle = document.getElementById('tradeoff-title');
+  if (tradeoffTitle) tradeoffTitle.innerHTML = `<span>⚖️</span> ${t.tradeoffTitle}`;
+  const starTitle = document.getElementById('star-title');
+  if (starTitle) starTitle.innerHTML = `<span>🎯</span> ${t.starTitle}`;
+  const snrTitle = document.getElementById('snr-title');
+  if (snrTitle) snrTitle.innerHTML = `<span>📡</span> ${t.snrTitle}`;
+
+  const peakTitle = document.getElementById('peak-title');
+  if (peakTitle) peakTitle.innerHTML = `<span>🌟</span> ${t.peakTitle}`;
+  const gapTitle = document.getElementById('gap-title');
+  if (gapTitle) gapTitle.innerHTML = `<span>⚠️</span> ${t.gapTitle}`;
+
+  const shadowTitle = document.getElementById('shadow-coaching-title');
+  if (shadowTitle) shadowTitle.innerText = t.shadowTitle;
+  const shadowDesc = document.getElementById('shadow-coaching-desc');
+  if (shadowDesc) shadowDesc.innerText = t.shadowDesc;
+  const shadowTag = document.getElementById('shadow-coaching-tag');
+  if (shadowTag) shadowTag.innerText = t.shadowTag;
+  const radarLabel = document.getElementById('radar-label');
+  if (radarLabel) radarLabel.innerText = t.radarLabel;
+  const visualPresenceLabel = document.getElementById('visual-presence-label');
+  if (visualPresenceLabel) visualPresenceLabel.innerText = t.visualPresenceLabel;
 
   const recTitle = document.getElementById('recording-card-title');
-  if (recTitle) recTitle.innerText = isEn ? 'Interview Recording & Replay' : 'Replay da Sua Entrevista Gravada';
+  if (recTitle) recTitle.innerText = t.recordingTitle;
   const recDesc = document.getElementById('recording-card-desc');
-  if (recDesc) recDesc.innerText = isEn ? 'Watch or listen to your recorded performance for forensic self-review.' : 'Assista ou ouça sua performance para autoavaliação forense.';
+  if (recDesc) recDesc.innerText = t.recordingDesc;
   const dlText = document.getElementById('download-recording-text');
-  if (dlText) dlText.innerText = isEn ? 'Download Recording' : 'Baixar Gravação (.webm)';
+  if (dlText) dlText.innerText = t.downloadRecording;
+  const audioRecLabel = document.getElementById('recording-audio-label');
+  if (audioRecLabel) audioRecLabel.innerText = t.audioSessionTitle;
+
+  const newSimTextEl = document.getElementById('btn-new-sim-text');
+  if (newSimTextEl) newSimTextEl.innerText = t.btnNewSim;
+  const historyTextEl = document.getElementById('btn-history-text');
+  if (historyTextEl) historyTextEl.innerText = t.btnHistory;
+
+  // Stage 4 History
+  const historyBadge = document.getElementById('history-badge');
+  if (historyBadge) historyBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> ${t.historyBadge}`;
+  const historyTitle = document.getElementById('history-title');
+  if (historyTitle) historyTitle.innerText = t.historyTitle;
+  const historyDesc = document.getElementById('history-desc');
+  if (historyDesc) historyDesc.innerText = t.historyDesc;
+  const clearHistoryText = document.getElementById('btn-clear-history-text');
+  if (clearHistoryText) clearHistoryText.innerText = t.clearHistoryBtn;
+
+  // Modal
+  const modalTitle = document.getElementById('modal-input-title');
+  if (modalTitle) modalTitle.innerText = t.modalTitle;
+  const modalInput = document.getElementById('user-text-input');
+  if (modalInput) modalInput.placeholder = t.modalPlaceholder;
+  const modalCancelBtn = document.getElementById('modal-cancel-btn');
+  if (modalCancelBtn) modalCancelBtn.innerText = t.modalCancel;
+  const modalSendBtn = document.getElementById('modal-send-btn');
+  if (modalSendBtn) modalSendBtn.innerText = t.modalSend;
 
   setUserInputEnabled(state.isInputAllowed);
+  renderHistoryUI();
 }
 
 function setUserInputEnabled(enabled, reason = '') {
@@ -513,20 +921,36 @@ function setupSimulationUI(mode) {
 }
 
 function loadSampleData() {
-  document.getElementById('cv-input').value = `SENIOR FULLSTACK SOFTWARE ENGINEER
+  const isPt = (state.language === 'pt-BR');
+  if (isPt) {
+    document.getElementById('cv-input').value = `ENGENHEIRO DE SOFTWARE FULLSTACK SÊNIOR
+- Mais de 5 anos arquitetando aplicações web escaláveis com TypeScript, React, Next.js e Node.js.
+- Desenvolveu microsserviços de alto rendimento e integrou bancos PostgreSQL e cache Redis.
+- Liderou pipelines de CI/CD, conteinerização com Docker e automação de testes unitários.
+- Mentorou desenvolvedores júnior/pleno e facilitou cerimônias ágeis.`;
+
+    document.getElementById('job-input').value = `VAGA: TECH LEAD / ENGENHEIRO DE SOFTWARE SÊNIOR
+- Ampla experiência com TypeScript, Node.js, Next.js e sistemas distribuídos em nuvem.
+- Histórico comprovado em liderança técnica de squads e gestão de incidentes/crises.
+- Sólido conhecimento em microsserviços de alta disponibilidade e estratégias de failover de banco.
+- Excelência em comunicação e resolução de conflitos em times multidisciplinares.`;
+  } else {
+    document.getElementById('cv-input').value = `SENIOR FULLSTACK SOFTWARE ENGINEER
 - 5+ years architecting scalable web apps with TypeScript, React, Next.js, and Node.js.
 - Designed high-throughput microservices and integrated PostgreSQL & Redis caching.
 - Spearheaded CI/CD pipelines, Docker containerization, and unit test automation.
 - Mentored mid-level developers and led agile sprint ceremonies.`;
 
-  document.getElementById('job-input').value = `ROLE: TECH LEAD / SENIOR SOFTWARE ENGINEER
+    document.getElementById('job-input').value = `ROLE: TECH LEAD / SENIOR SOFTWARE ENGINEER
 - Deep expertise in TypeScript, Node.js, Next.js, and distributed cloud systems.
 - Proven track record in technical squad leadership and crisis management.
 - Strong background in high-availability microservices and database failover strategies.
 - Excellent communication and conflict-resolution skills in cross-functional teams.`;
+  }
 }
 
 function triggerPdfUpload() {
+  const isEn = (state.language === 'en-US');
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = '.pdf,.docx,.txt';
@@ -534,10 +958,12 @@ function triggerPdfUpload() {
     const file = e.target.files[0];
     if (file) {
       const btn = document.getElementById('btn-upload-pdf');
-      btn.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400">✅ Anexado: ${file.name}</span>`;
+      btn.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400">✅ ${isEn ? 'Attached' : 'Anexado'}: ${file.name}</span>`;
       
       const cvArea = document.getElementById('cv-input');
-      cvArea.value = `[ARQUIVO ANEXADO: ${file.name}]\n\nO conteúdo deste documento será extraído e analisado pela IA no servidor ao clicar em 'Analisar Compatibilidade'.`;
+      cvArea.value = isEn
+        ? `[ATTACHED FILE: ${file.name}]\n\nThe content of this document will be processed and analyzed by the AI engine upon clicking 'Analyze Match & Gaps'.`
+        : `[ARQUIVO ANEXADO: ${file.name}]\n\nO conteúdo deste documento será extraído e analisado pela IA no servidor ao clicar em 'Analisar Compatibilidade & Gaps'.`;
       cvArea.classList.add('bg-emerald-50/30', 'dark:bg-emerald-900/10', 'border-emerald-300', 'dark:border-emerald-700/50');
     }
   };
@@ -547,21 +973,22 @@ function triggerPdfUpload() {
 async function analyzeCVAndJob() {
   const cv = document.getElementById('cv-input').value.trim();
   const job = document.getElementById('job-input').value.trim();
+  const isEn = (state.language === 'en-US');
 
   if (!cv || !job) {
-    alert('Please enter or generate your resume and target job description.');
+    alert(isEn ? 'Please enter or generate your resume and target job description.' : 'Por favor, insira ou gere seu currículo e a descrição da vaga.');
     return;
   }
 
   const btn = document.getElementById('btn-run-analysis');
-  btn.innerHTML = '<span>Analyzing Profile...</span>';
+  btn.innerHTML = isEn ? '<span>Analyzing Profile...</span>' : '<span>Analisando Perfil...</span>';
   btn.disabled = true;
 
   try {
     const res = await fetch('/api/analyze-cv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cv_text: cv, job_text: job })
+      body: JSON.stringify({ cv_text: cv, job_text: job, language: state.language || 'en-US' })
     });
 
     const data = await res.json();
@@ -571,16 +998,22 @@ async function analyzeCVAndJob() {
     document.getElementById('analysis-summary-text').innerText = data.summary;
 
     const domainBadge = document.getElementById('analysis-domain-badge');
-    if (domainBadge) domainBadge.innerText = data.domain ? `ATS Ingestion • ${data.domain}` : 'ATS Ingestion Complete';
+    if (domainBadge) domainBadge.innerText = data.domain ? `ATS Ingestion • ${data.domain}` : (isEn ? 'ATS Ingestion Complete' : 'Ingestão ATS Concluída');
 
     const domainTitle = document.getElementById('analysis-domain-title');
-    if (domainTitle) domainTitle.innerText = data.domain ? `${data.domain} Alignment Overview` : 'Resume Alignment Overview';
+    if (domainTitle) domainTitle.innerText = data.domain ? `${data.domain} Alignment Overview` : (isEn ? 'Resume Alignment Overview' : 'Visão Geral de Alinhamento');
 
     const startBtnText = document.getElementById('btn-start-analysis-text');
     if (startBtnText) {
-      startBtnText.innerText = data.interviewer_name 
-        ? `Start 1:1 Interview with ${data.interviewer_name}` 
-        : (data.domain ? `Start 1:1 Interview (${data.domain})` : 'Start 1:1 Technical Interview');
+      if (isEn) {
+        startBtnText.innerText = data.interviewer_name 
+          ? `Start 1:1 Interview with ${data.interviewer_name}` 
+          : (data.domain ? `Start 1:1 Interview (${data.domain})` : 'Start 1:1 Technical Interview');
+      } else {
+        startBtnText.innerText = data.interviewer_name 
+          ? `Iniciar Entrevista 1:1 com ${data.interviewer_name}` 
+          : (data.domain ? `Iniciar Entrevista 1:1 (${data.domain})` : 'Iniciar Entrevista Técnica 1:1');
+      }
     }
 
     document.getElementById('present-keywords').innerHTML = data.present_keywords.map(k => 
@@ -603,7 +1036,7 @@ async function analyzeCVAndJob() {
   } catch (err) {
     console.error(err);
   } finally {
-    btn.innerHTML = '<span>Analyze Match & Gaps</span>';
+    btn.innerHTML = isEn ? '<span>Analyze Match & Gaps</span>' : '<span>Analisar Compatibilidade & Gaps</span>';
     btn.disabled = false;
   }
 }
@@ -643,7 +1076,7 @@ async function requestBotTurn(userMsg = '') {
         user_message: userMsg,
         user_image: userSnapshot,
         context: state.analysisContext,
-        language: state.language || 'pt-BR'
+        language: state.language || 'en-US'
       })
     });
 
@@ -1258,7 +1691,7 @@ async function finishSimulationAndGenerateReport() {
         user_id: state.userId,
         had_video: sessionHadVideo,
         video_observations: sessionVideoObs,
-        language: state.language || 'pt-BR'
+        language: state.language || 'en-US'
       })
     });
     
@@ -1692,7 +2125,11 @@ function toggleHistoryDetails(id) {
 }
 
 function clearAllHistory() {
-  if (confirm('Tem certeza que deseja apagar todo o histórico de simulações salvas?')) {
+  const isEn = (state.language === 'en-US');
+  const msg = isEn 
+    ? 'Are you sure you want to clear all saved interview history?' 
+    : 'Tem certeza que deseja apagar todo o histórico de simulações salvas?';
+  if (confirm(msg)) {
     localStorage.removeItem('talentflow_history');
     renderHistoryUI();
   }
