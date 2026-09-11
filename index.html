@@ -305,20 +305,20 @@
             <button id="btn-camera" onclick="toggleCamera()" class="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200" title="Turn Camera On/Off (Optional Agentic Video Understanding)">
               <span id="camera-icon">📷</span> <span id="camera-text">Camera (Off)</span>
             </button>
-            <button id="btn-mic" onclick="toggleMicrophone()" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200">
-              <span id="mic-icon">🎙️</span> <span id="mic-text">Microphone</span>
+            <button id="btn-mic" onclick="toggleMicrophone()" disabled class="opacity-40 cursor-not-allowed pointer-events-none px-5 py-3 rounded-xl bg-slate-100 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200" title="Aguarde o entrevistador fazer a primeira pergunta">
+              <span id="mic-icon">🎙️</span> <span id="mic-text">Microfone</span>
             </button>
             <button id="btn-finish-speech" onclick="finishSpeechAndSend()" class="hidden px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[14px] font-semibold transition-all items-center gap-2 shadow-md animate-pulse">
               <span>✅</span> <span id="btn-finish-text">Concluir Fala</span>
             </button>
-            <button onclick="toggleTextInputModal()" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200">
-              <span>💬</span> <span id="btn-type-text">Type</span>
+            <button id="btn-type" onclick="toggleTextInputModal()" disabled class="opacity-40 cursor-not-allowed pointer-events-none px-5 py-3 rounded-xl bg-slate-100 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200" title="Aguarde o entrevistador fazer a primeira pergunta">
+              <span>💬</span> <span id="btn-type-text">Digitar</span>
             </button>
             
             <div class="w-px h-7 bg-slate-200 mx-1"></div>
 
-            <button onclick="finishSimulationAndGenerateReport()" class="px-5 py-3 rounded-xl hover:bg-red-50 text-red-600 text-[14px] font-semibold transition-all flex items-center gap-2">
-              <span>🔴</span> <span id="btn-end-text">End Simulation</span>
+            <button id="btn-end-sim" onclick="finishSimulationAndGenerateReport()" class="px-5 py-3 rounded-xl hover:bg-red-50 text-red-600 text-[14px] font-semibold transition-all flex items-center gap-2">
+              <span>🔴</span> <span id="btn-end-text">Encerrar Simulação</span>
             </button>
           </div>
         </div>
@@ -582,10 +582,14 @@
           </p>
         </div>
 
-        <button onclick="switchStage('history')" class="w-full py-4 rounded-xl bg-slate-900 text-white font-semibold text-[14px] hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition shadow-md flex items-center justify-center gap-2 mt-2">
-          <span>View Detailed Session History & Firestore Records</span>
-          <span class="text-slate-400">→</span>
-        </button>
+        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+          <button onclick="startNewInterview()" class="flex-1 py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[14px] transition shadow-md flex items-center justify-center gap-2">
+            <span>🔄</span> <span id="btn-new-sim-text">Iniciar Nova Simulação</span>
+          </button>
+          <button onclick="switchStage('history')" class="flex-1 py-4 rounded-xl bg-slate-900 text-white font-semibold text-[14px] hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition shadow-md flex items-center justify-center gap-2">
+            <span>📜</span> <span id="btn-history-text">Ver Histórico de Sessões</span>
+          </button>
+        </div>
 
       </div>
     </div>

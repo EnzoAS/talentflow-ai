@@ -22,6 +22,7 @@ const state = {
   secondsLeft: 300,
   timerInterval: null,
   recognition: null,
+  isInputAllowed: false,
   
   totalTokens: 0,
   totalCostUSD: 0,
@@ -93,6 +94,18 @@ function updateLanguageUI() {
   const finishTextEl = document.getElementById('btn-finish-text');
   if (finishTextEl) finishTextEl.innerText = isEn ? 'Finish Speaking' : 'Concluir Fala';
 
+  const typeTextEl = document.getElementById('btn-type-text');
+  if (typeTextEl) typeTextEl.innerText = isEn ? 'Type' : 'Digitar';
+
+  const endTextEl = document.getElementById('btn-end-text');
+  if (endTextEl) endTextEl.innerText = isEn ? 'End Simulation' : 'Encerrar Simulação';
+
+  const newSimTextEl = document.getElementById('btn-new-sim-text');
+  if (newSimTextEl) newSimTextEl.innerText = isEn ? 'Start New Simulation' : 'Iniciar Nova Simulação';
+
+  const historyTextEl = document.getElementById('btn-history-text');
+  if (historyTextEl) historyTextEl.innerText = isEn ? 'View Session History' : 'Ver Histórico de Sessões';
+
   const cameraTextEl = document.getElementById('camera-text');
   if (cameraTextEl) {
     if (state.isCameraActive) {
@@ -100,6 +113,58 @@ function updateLanguageUI() {
     } else {
       cameraTextEl.innerText = isEn ? 'Camera (Off)' : 'Câmera (Desligada)';
     }
+  }
+
+  setUserInputEnabled(state.isInputAllowed);
+}
+
+function setUserInputEnabled(enabled, reason = '') {
+  state.isInputAllowed = Boolean(enabled);
+  const micBtn = document.getElementById('btn-mic');
+  const typeBtn = document.getElementById('btn-type');
+  const finishBtn = document.getElementById('btn-finish-speech');
+  const isEn = (state.language === 'en-US');
+
+  if (micBtn) {
+    if (state.isInputAllowed) {
+      micBtn.disabled = false;
+      micBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      micBtn.classList.add('hover:bg-slate-200');
+      micBtn.title = isEn ? 'Click to speak' : 'Clique para falar no microfone';
+    } else {
+      micBtn.disabled = true;
+      micBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      micBtn.classList.remove('hover:bg-slate-200', 'bg-red-600', 'hover:bg-red-700', 'animate-pulse');
+      micBtn.className = 'opacity-40 cursor-not-allowed pointer-events-none px-5 py-3 rounded-xl bg-slate-100 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200';
+      const micIcon = document.getElementById('mic-icon');
+      if (micIcon) micIcon.innerText = '🎙️';
+      const micText = document.getElementById('mic-text');
+      if (micText) micText.innerText = isEn ? 'Microphone' : 'Microfone';
+      micBtn.title = reason || (isEn ? 'Wait for interviewer to speak' : 'Aguarde o entrevistador fazer a pergunta');
+    }
+  }
+
+  if (typeBtn) {
+    if (state.isInputAllowed) {
+      typeBtn.disabled = false;
+      typeBtn.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      typeBtn.classList.add('hover:bg-slate-200');
+      typeBtn.title = isEn ? 'Click to type response' : 'Clique para digitar sua resposta';
+    } else {
+      typeBtn.disabled = true;
+      typeBtn.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      typeBtn.classList.remove('hover:bg-slate-200');
+      typeBtn.title = reason || (isEn ? 'Wait for interviewer to speak' : 'Aguarde o entrevistador fazer a pergunta');
+    }
+  }
+
+  if (!state.isInputAllowed) {
+    if (finishBtn) {
+      finishBtn.classList.add('hidden');
+      finishBtn.classList.remove('flex');
+    }
+    const modal = document.getElementById('modal-text-input');
+    if (modal) modal.classList.add('hidden');
   }
 }
 
@@ -285,6 +350,10 @@ function setupSimulationUI(mode) {
   renderAvatar('avatar-user', '🧑‍💼', '🧑‍💼');
 
   const isEn = (state.language === 'en-US');
+  if (state.dialogueHistory.length === 0) {
+    setUserInputEnabled(false, isEn ? 'Wait for interviewer to ask opening question' : 'Aguarde o entrevistador fazer a primeira pergunta');
+  }
+
   if (!state.isRunning && state.dialogueHistory.length === 0) {
     const captionSpeaker = document.getElementById('caption-speaker');
     if (captionSpeaker) captionSpeaker.innerText = `${expertName} (${expertRole})`;
@@ -393,12 +462,14 @@ async function analyzeCVAndJob() {
 
 function startSimulationFromAnalysis(mode) {
   switchStage(mode);
+  setUserInputEnabled(false, state.language === 'en-US' ? 'Awaiting opening question...' : 'Aguardando pergunta inicial do entrevistador...');
   toggleSimulation();
 }
 
 async function requestBotTurn(userMsg = '') {
   if (state.isTurnLoading) return;
   state.isTurnLoading = true;
+  setUserInputEnabled(false, state.language === 'en-US' ? 'Interviewer is thinking...' : 'Entrevistador está pensando...');
 
   const expertName = (state.analysisContext && state.analysisContext.interviewer_name) || 'Carlos Mendes';
   const speakerIndicator = state.currentMode === 'one-on-one' ? expertName : 'Entrevistador';
@@ -444,15 +515,23 @@ async function requestBotTurn(userMsg = '') {
     appendDialogue(bot.speaker_id, bot.speaker_name, bot.avatar, bot.text);
     updateMetrics(bot.tokens_estimated || 45, bot.speaker_id, bot.text);
 
+    // Keep input locked while bot audio is playing
+    setUserInputEnabled(false, state.language === 'en-US' ? 'Interviewer is speaking...' : 'Entrevistador falando...');
+
     // 2. Play Neural Voice in background with immediate visual feedback
     speakText(bot.text, bot.speaker_id, () => {
       setSpeakingState(null);
       const isEn = (state.language === 'en-US');
       document.getElementById('caption-speaker').innerText = isEn ? 'Your Turn to Speak' : 'Sua vez de falar';
-      document.getElementById('caption-text').innerText = isEn ? 'Speak into the microphone or click "Type" to reply.' : 'Fale no microfone ou clique em "Digitar Fala" para responder.';
+      document.getElementById('caption-text').innerText = isEn ? 'Speak into the microphone or click "Type" to reply.' : 'Fale no microfone ou clique em "Digitar" para responder.';
+      // Interviewer finished asking question -> candidate may speak/type now!
+      setUserInputEnabled(true);
     });
   } catch (err) {
     console.error("Erro no turno da simulação:", err);
+    if (state.dialogueHistory.length > 0) {
+      setUserInputEnabled(true);
+    }
   } finally {
     state.isTurnLoading = false;
   }
@@ -481,6 +560,7 @@ function toggleSimulation() {
     }
 
     if (state.dialogueHistory.length === 0) {
+      setUserInputEnabled(false, state.language === 'en-US' ? 'Interviewer is preparing the opening question...' : 'Aguarde a pergunta inicial do entrevistador...');
       requestBotTurn('');
     }
   } else {
@@ -491,6 +571,7 @@ function toggleSimulation() {
       currentAudioPlayer.currentTime = 0;
     }
     setSpeakingState(null);
+    setUserInputEnabled(false, state.language === 'en-US' ? 'Interview paused' : 'Entrevista pausada');
   }
 }
 
@@ -498,6 +579,10 @@ function sendUserMessage() {
   const input = document.getElementById('user-text-input');
   const text = input.value.trim();
   if (!text) return;
+
+  const modal = document.getElementById('modal-text-input');
+  if (modal) modal.classList.add('hidden');
+  setUserInputEnabled(false, state.language === 'en-US' ? 'Interviewer is analyzing your response...' : 'Entrevistador analisando sua resposta...');
 
   input.value = '';
   setSpeakingState('user');
@@ -518,6 +603,9 @@ function insertQuickResponse(text) {
 }
 
 function toggleTextInputModal() {
+  if (!state.isInputAllowed || state.dialogueHistory.length === 0 || state.isTurnLoading) {
+    return;
+  }
   const modal = document.getElementById('modal-text-input');
   modal.classList.toggle('hidden');
   if (!modal.classList.contains('hidden')) {
@@ -729,6 +817,11 @@ function captureWebcamSnapshot() {
 }
 
 function toggleMicrophone() {
+  if (!state.isInputAllowed || state.dialogueHistory.length === 0 || state.isTurnLoading) {
+    console.warn("Speech input blocked: waiting for interviewer.");
+    return;
+  }
+
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert('Speech recognition is not supported in this browser. Please use Google Chrome or click the "Type" button.');
     return;
@@ -912,29 +1005,87 @@ async function finishSimulationAndGenerateReport() {
     state.timerInterval = null;
   }
   if (currentAudioPlayer) {
-    currentAudioPlayer.pause();
-    currentAudioPlayer.currentTime = 0;
+    try {
+      currentAudioPlayer.pause();
+      currentAudioPlayer.currentTime = 0;
+      currentAudioPlayer.src = '';
+    } catch (e) {}
+    currentAudioPlayer = null;
+  }
+
+  // Abort speech recognition immediately so it cannot receive any audio
+  if (state.recognition) {
+    try {
+      state.recognition.abort();
+    } catch (e) {}
   }
   stopMic();
-  if (state.isCameraActive) {
-    toggleCamera();
+
+  // Stop camera hardware tracks physically
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach(track => {
+      try { track.stop(); } catch (e) {}
+    });
+    state.cameraStream = null;
   }
+  const webcamVideo = document.getElementById('webcam-preview');
+  if (webcamVideo) webcamVideo.srcObject = null;
+  state.isCameraActive = false;
+
+  const webcamContainer = document.getElementById('webcam-container');
+  if (webcamContainer) webcamContainer.classList.add('hidden');
+  const avatarUser = document.getElementById('avatar-user');
+  if (avatarUser) avatarUser.classList.remove('hidden');
+  const videoBadge = document.getElementById('video-badge');
+  if (videoBadge) videoBadge.classList.add('hidden');
+
+  const btnCamera = document.getElementById('btn-camera');
+  if (btnCamera) {
+    btnCamera.className = 'px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200';
+  }
+  const camIcon = document.getElementById('camera-icon');
+  if (camIcon) camIcon.innerText = '📷';
+  const camText = document.getElementById('camera-text');
+  if (camText) camText.innerText = (state.language === 'en-US') ? 'Camera (Off)' : 'Câmera (Desligada)';
+
+  // Disable user input completely
+  setUserInputEnabled(false, (state.language === 'en-US') ? 'Simulation ended' : 'Simulação encerrada');
+
+  const modal = document.getElementById('modal-text-input');
+  if (modal) modal.classList.add('hidden');
+
+  const drawer = document.getElementById('transcript-drawer');
+  if (drawer) {
+    drawer.classList.add('hidden');
+    drawer.classList.remove('flex');
+  }
+
   setSpeakingState(null);
 
   const startBtn = document.getElementById('btn-start-sim');
   if (startBtn) {
-    startBtn.innerHTML = '<span>▶</span> <span>Start</span>';
+    startBtn.innerHTML = '<span class="text-emerald-400">▶</span> <span id="btn-start-sim-text">Start</span>';
     startBtn.className = 'px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[14px] font-semibold transition-all shadow-md flex items-center gap-2';
   }
+
+  const timerDisplay = document.getElementById('timer-display');
+  if (timerDisplay) timerDisplay.innerText = '05:00';
 
   // 2. Snapshot current dialogue and video observations to evaluate before clearing
   const sessionDialogue = [...state.dialogueHistory];
   const sessionHadVideo = state.hadVideoInSession;
   const sessionVideoObs = [...state.videoObservations];
   
+  // If no dialogue took place, simply reset and open a new session directly
+  if (sessionDialogue.length === 0) {
+    state.isEvaluating = false;
+    startNewInterview();
+    return;
+  }
+
   // Show Scorecard view with loading indicator
   switchStage('report');
-  document.getElementById('overall-score-display').innerHTML = `<span class="animate-pulse text-2xl font-mono text-slate-400">Evaluating...</span>`;
+  document.getElementById('overall-score-display').innerHTML = `<span class="animate-pulse text-2xl font-mono text-slate-400">${state.language === 'en-US' ? 'Evaluating...' : 'Avaliando...'}</span>`;
 
   try {
     const res = await fetch('/api/evaluate-simulation', {
@@ -1126,8 +1277,104 @@ async function finishSimulationAndGenerateReport() {
     state.dialogueHistory = [];
     state.secondsLeft = 300;
     const feed = document.getElementById('dialogue-feed');
-    if (feed) feed.innerHTML = '';
   }
+}
+
+function startNewInterview() {
+  // 1. Immediately terminate and clean up all ongoing streams & timers
+  state.isRunning = false;
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+  if (currentAudioPlayer) {
+    try {
+      currentAudioPlayer.pause();
+      currentAudioPlayer.currentTime = 0;
+      currentAudioPlayer.src = '';
+    } catch (e) {}
+    currentAudioPlayer = null;
+  }
+  if (state.recognition) {
+    try { state.recognition.abort(); } catch (e) {}
+  }
+  stopMic();
+
+  if (state.cameraStream) {
+    state.cameraStream.getTracks().forEach(track => {
+      try { track.stop(); } catch (e) {}
+    });
+    state.cameraStream = null;
+  }
+  const webcamVideo = document.getElementById('webcam-preview');
+  if (webcamVideo) webcamVideo.srcObject = null;
+  state.isCameraActive = false;
+
+  const webcamContainer = document.getElementById('webcam-container');
+  if (webcamContainer) webcamContainer.classList.add('hidden');
+  const avatarUser = document.getElementById('avatar-user');
+  if (avatarUser) avatarUser.classList.remove('hidden');
+  const videoBadge = document.getElementById('video-badge');
+  if (videoBadge) videoBadge.classList.add('hidden');
+
+  const btnCamera = document.getElementById('btn-camera');
+  if (btnCamera) {
+    btnCamera.className = 'px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[14px] font-medium transition-all flex items-center gap-2 border border-slate-200';
+  }
+  const camIcon = document.getElementById('camera-icon');
+  if (camIcon) camIcon.innerText = '📷';
+  const camText = document.getElementById('camera-text');
+  if (camText) camText.innerText = (state.language === 'en-US') ? 'Camera (Off)' : 'Câmera (Desligada)';
+
+  setSpeakingState(null);
+
+  // 2. Reset simulation state and metrics
+  state.dialogueHistory = [];
+  state.secondsLeft = 300;
+  state.isTurnLoading = false;
+  state.hadVideoInSession = false;
+  state.videoObservations = [];
+  state.totalTokens = 0;
+  state.totalCostUSD = 0;
+  state.userWords = 0;
+  state.botWords = { carlos: 0 };
+  state.isInputAllowed = false;
+
+  // 3. Reset DOM elements
+  const feed = document.getElementById('dialogue-feed');
+  if (feed) feed.innerHTML = '';
+
+  const timerDisplay = document.getElementById('timer-display');
+  if (timerDisplay) timerDisplay.innerText = '05:00';
+
+  const startBtn = document.getElementById('btn-start-sim');
+  if (startBtn) {
+    startBtn.innerHTML = '<span class="text-emerald-400">▶</span> <span id="btn-start-sim-text">Start</span>';
+    startBtn.className = 'px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[14px] font-semibold transition-all shadow-md flex items-center gap-2';
+  }
+
+  const modal = document.getElementById('modal-text-input');
+  if (modal) modal.classList.add('hidden');
+
+  const drawer = document.getElementById('transcript-drawer');
+  if (drawer) {
+    drawer.classList.add('hidden');
+    drawer.classList.remove('flex');
+  }
+
+  setUserInputEnabled(false, state.language === 'en-US' ? 'Click Start to begin interview' : 'Clique em Iniciar para começar');
+
+  // Reset diagnostic panel
+  const formContainer = document.getElementById('cv-form-container');
+  if (formContainer) formContainer.classList.remove('hidden');
+  const resultPanel = document.getElementById('analysis-result-panel');
+  if (resultPanel) {
+    resultPanel.classList.add('hidden');
+    resultPanel.classList.remove('flex');
+  }
+
+  // 4. Return to Diagnostic stage
+  switchStage('cv');
 }
 
 function saveSessionToHistory(session) {
