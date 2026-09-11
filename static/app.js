@@ -353,6 +353,19 @@ async function analyzeCVAndJob() {
     document.getElementById('ats-score-display').innerText = `${data.match_score}%`;
     document.getElementById('analysis-summary-text').innerText = data.summary;
 
+    const domainBadge = document.getElementById('analysis-domain-badge');
+    if (domainBadge) domainBadge.innerText = data.domain ? `ATS Ingestion • ${data.domain}` : 'ATS Ingestion Complete';
+
+    const domainTitle = document.getElementById('analysis-domain-title');
+    if (domainTitle) domainTitle.innerText = data.domain ? `${data.domain} Alignment Overview` : 'Resume Alignment Overview';
+
+    const startBtnText = document.getElementById('btn-start-analysis-text');
+    if (startBtnText) {
+      startBtnText.innerText = data.interviewer_name 
+        ? `Start 1:1 Interview with ${data.interviewer_name}` 
+        : (data.domain ? `Start 1:1 Interview (${data.domain})` : 'Start 1:1 Technical Interview');
+    }
+
     document.getElementById('present-keywords').innerHTML = data.present_keywords.map(k => 
       `<span class="micro-label bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 font-mono">${k}</span>`
     ).join('');

@@ -166,8 +166,8 @@
         <div class="card-frame p-8 flex flex-col gap-6 bg-white border border-slate-200 rounded-3xl shadow-sm">
           <div class="flex items-center justify-between border-b border-slate-100 pb-5">
             <div>
-              <span class="micro-label text-emerald-600 font-bold text-xs">ATS Ingestion Complete</span>
-              <h3 class="text-2xl font-bold text-slate-900 mt-1">Resume Alignment Overview</h3>
+              <span class="micro-label text-emerald-600 font-bold text-xs" id="analysis-domain-badge">ATS Ingestion Complete</span>
+              <h3 class="text-2xl font-bold text-slate-900 mt-1" id="analysis-domain-title">Resume Alignment Overview</h3>
             </div>
             <div class="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-5 py-3 rounded-2xl">
               <span class="text-sm text-emerald-700 font-semibold">Match Score:</span>
@@ -198,7 +198,7 @@
 
           <div class="flex flex-col gap-4 pt-3">
             <button onclick="startSimulationFromAnalysis('one-on-one')" class="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-[15px] transition shadow-md flex items-center justify-center gap-2">
-              <span>Start 1:1 Technical Interview</span>
+              <span id="btn-start-analysis-text">Start 1:1 Technical Interview</span>
               <span class="text-blue-200">→</span>
             </button>
           </div>

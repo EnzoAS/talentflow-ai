@@ -30,7 +30,7 @@ api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("\ufeffGEMINI_API_K
 client = genai.Client(api_key=api_key) if api_key else genai.Client(api_key="none")
 FALLBACK_MODELS = ["gemini-3.6-flash", "gemini-3.1-pro-preview"]
 
-def generate_structured_gemini(contents, schema, temperature=0.5, max_tokens=1200):
+def generate_structured_gemini(contents, schema, temperature=0.5, max_tokens=3500):
     """
     Resilient caller with automatic multi-model failover for 503/429/404 errors.
     Supports both text prompts and multimodal lists with images.
@@ -134,32 +134,39 @@ def extract_cv_gaps(cv: str, job: str) -> dict:
     """
     prompt = f"""
     You are an Expert ATS Evaluator & Multi-Domain Interview Strategist.
-    CV: {cv}
-    Job Description: {job}
+    Analyze the candidate's CV against the target Job Description in depth.
+    
+    CV:
+    {cv}
+    
+    Job Description:
+    {job}
     
     Task:
-    1. Identify the domain of the job (e.g. "Software Engineering", "Growth Marketing", "Corporate Finance", "Product Design", "B2B Sales", etc.).
-    2. Define a specialized Technical / Domain Interviewer Persona (e.g. for Marketing: "Marcus Vance" / "Head of Growth & Performance"; for Finance: "Robert Sterling" / "Chief Financial Officer"; for Tech: "Carlos Mendes" / "Senior Tech Lead"). For interviewer_avatar, strictly provide a single emoji such as 👨‍💻, 👨‍💼, 👩‍💻, 👩‍💼, 👨‍🔬.
-    3. Generate a structured 1:1 Technical Interview Playbook for the domain specialist.
+    1. Identify the exact professional domain (e.g. "Sports Science & High Performance", "Growth Marketing", "Corporate Finance", "Software Engineering", "Product Design", "Medicine / Health", "Sales & Business Development", etc.).
+    2. Define a specialized Technical / Domain Interviewer Persona appropriate for this exact field (e.g. for Sports: "Dr. Rodrigo Silva" / "Head de Fisiologia & Performance"; for Tech: "Carlos Mendes" / "Senior Tech Lead"; for Finance: "Robert Sterling" / "CFO"). For interviewer_avatar, strictly provide a single emoji such as 👨‍💻, 👨‍💼, 👩‍💻, 👩‍💼, 👨‍🔬, 🏃‍♂️.
+    3. Calculate a realistic ATS match_score (0-100) based on actual keyword alignment.
+    4. Extract real, domain-specific present keywords from the CV and missing keywords from the job description.
+    5. Formulate an adaptive 1:1 interview focus and a 3-step playbook specifically tailored to this industry.
     """
     try:
-        return generate_structured_gemini(prompt, ATSAnalysisResponse, temperature=0.3, max_tokens=1000)
+        return generate_structured_gemini(prompt, ATSAnalysisResponse, temperature=0.3, max_tokens=3500)
     except Exception as e:
         print("[extract_cv_gaps fallback]:", e)
         return {
             "match_score": 85,
-            "domain": "Software Engineering",
-            "interviewer_name": "Carlos Mendes",
-            "interviewer_role": "Senior Tech Lead",
-            "interviewer_avatar": "👨‍💻",
+            "domain": "Domain Specialist",
+            "interviewer_name": "Dr. Carlos Mendes",
+            "interviewer_role": "Executive Lead Interviewer",
+            "interviewer_avatar": "👨‍💼",
             "summary": "Competitive alignment found with key domain gaps to defend.",
-            "present_keywords": ["Core Competencies", "Domain Skills"],
-            "missing_keywords": ["Advanced Architecture / KPIs"],
-            "simulation_focus": "Challenge candidate on edge cases, KPI defense, and leadership trade-offs.",
+            "present_keywords": ["Professional Experience", "Domain Competencies"],
+            "missing_keywords": ["Advanced Methodologies", "Cross-functional Strategy"],
+            "simulation_focus": "Assess core domain expertise, problem-solving under pressure, and strategic trade-offs.",
             "interview_playbook": [
-                "Interviewer challenges candidate on crisis handling and architecture scale",
-                "Interviewer probes into edge cases, technical trade-offs, and resilience under pressure",
-                "Interviewer evaluates technical leadership and system design decisions"
+                "Probe into past practical cases and crisis management",
+                "Evaluate technical trade-offs and domain methodology decisions",
+                "Assess strategic decision-making and cross-team communication"
             ]
         }
 
